@@ -15,81 +15,110 @@ Research foundations:
     - Adaptive Probing (Staab et al. 2025)
     - Bertrand & Mullainathan (2004) name-demographic associations
 
-Public API:
-    audit_agent()       — One-liner async audit entry point
-    AgentAuditor        — Granular control via class-based interface
-    AgentAuditConfig    — Configuration dataclass
-    AgentAuditReport    — Structured report object
-    compare_audits()    — Before/after comparison
+═══════════════════════════════════════════════════════════════════════════════
+PUBLIC API - Three Levels
+═══════════════════════════════════════════════════════════════════════════════
+
+Level 1: One-Liner (Simplest)
+------------------------------
+    from agent_audit import audit_agent
+    
+    report = await audit_agent(
+        system_prompt="You are a hiring assistant...",
+        seed_case="Evaluate: Name: Alex...",
+        api_key="gsk_...",
+    )
+
+Level 2: Class-Based (Power Users)
+-----------------------------------
+    from agent_audit import AgentAuditor
+    
+    auditor = AgentAuditor.from_prompt(
+        system_prompt="...",
+        api_key="gsk_...",
+    )
+    report = await auditor.run(seed_case="...")
+    
+    # Before/after comparison
+    auditor.update_prompt("Improved prompt...")
+    report_after = await auditor.run(seed_case="...")
+    comparison = auditor.compare(report, report_after)
+
+Level 3: Manual Pipeline (Experts)
+-----------------------------------
+    from agent_audit.context import build_agent_connector
+    from agent_audit.personas import generate_pairwise_grid
+    from agent_audit.interrogation import InterrogationEngine
+    # ... full control over each layer
+
+═══════════════════════════════════════════════════════════════════════════════
 """
 
-from agent_audit.config import AgentAuditConfig, AuditMode, DecisionContext
-from agent_audit.models import AgentAuditReport, AgentFinding, PersonaResult
-from agent_audit.report import compare_audits
+# ── Level 1 & 2 API ──────────────────────────────────────────────────────────
+from agent_audit.api import audit_agent, AgentAuditor
+
+# ── Config Classes ───────────────────────────────────────────────────────────
+from agent_audit.config import (
+    AgentAuditConfig,
+    AuditMode,
+    DecisionContext,
+    AgentConnectionMode,
+    PromptAgentConfig,
+    APIAgentConfig,
+    ReplayAgentConfig,
+)
+
+# ── Models ───────────────────────────────────────────────────────────────────
+from agent_audit.models import (
+    AgentAuditReport,
+    AgentFinding,
+    PersonaResult,
+    Interpretation,
+    PromptSuggestion,
+)
+
+# ── Report Utilities ─────────────────────────────────────────────────────────
+from agent_audit.report import compare_audits, build_report_summary
+
+# ── Level 3 API (Expert Mode) ────────────────────────────────────────────────
+from agent_audit.context import build_agent_connector, validate_config, validate_seed_case
+from agent_audit.personas.pairwise import generate_pairwise_grid
+from agent_audit.personas.factorial import generate_factorial_grid
+from agent_audit.personas.names import generate_name_variants
+from agent_audit.personas.context_primes import generate_context_variants
+
 
 __all__ = [
-    "audit_agent",
-    "AgentAuditor",
+    # ── Level 1 & 2 API ──────────────────────────────────────────────────────
+    "audit_agent",              # One-liner function
+    "AgentAuditor",             # Class-based interface
+    
+    # ── Config Classes ───────────────────────────────────────────────────────
     "AgentAuditConfig",
+    "AuditMode",
+    "DecisionContext",
+    "AgentConnectionMode",
+    "PromptAgentConfig",
+    "APIAgentConfig",
+    "ReplayAgentConfig",
+    
+    # ── Models ───────────────────────────────────────────────────────────────
     "AgentAuditReport",
+    "AgentFinding",
+    "PersonaResult",
+    "Interpretation",
+    "PromptSuggestion",
+    
+    # ── Report Utilities ─────────────────────────────────────────────────────
     "compare_audits",
+    "build_report_summary",
+    
+    # ── Level 3 API (Expert Mode) ────────────────────────────────────────────
+    "build_agent_connector",
+    "validate_config",
+    "validate_seed_case",
+    "generate_pairwise_grid",
+    "generate_factorial_grid",
+    "generate_name_variants",
+    "generate_context_variants",
 ]
-
-
-class AgentAuditor:
-    """
-    Main orchestrator for the agent bias audit pipeline.
-
-    Coordinates all five layers:
-        Layer 1 — Context Collection & Agent Interface
-        Layer 2 — Persona Grid Generation
-        Layer 3 — Agent Interrogation Engine
-        Layer 4 — Statistical Bias Detection (pure Python, no LLM)
-        Layer 5 — LLM Interpreter & Remediation
-    """
-
-    def __init__(self, config: AgentAuditConfig):
-        self.config = config
-
-    async def run(self, system_prompt: str, seed_case: str) -> AgentAuditReport:
-        """Execute the full audit pipeline and return a structured report."""
-        raise NotImplementedError("Pipeline orchestration — implement in Phase 2")
-
-
-async def audit_agent(
-    system_prompt: str,
-    seed_case: str,
-    mode: str = "standard",
-    attributes: list[str] | None = None,
-    backend: str = "openai",
-    api_key: str | None = None,
-    context: dict | None = None,
-) -> AgentAuditReport:
-    """
-    One-liner async audit entry point.
-
-    Args:
-        system_prompt: The agent's system prompt text.
-        seed_case: One representative input to the agent.
-        mode: Audit depth — "quick" | "standard" | "full".
-        attributes: Protected attributes to test (e.g. ["gender", "race", "age"]).
-        backend: LLM backend — "openai" | "anthropic" | "ollama".
-        api_key: API key for the chosen backend.
-        context: Decision context dict with keys: domain, positive, negative.
-
-    Returns:
-        AgentAuditReport with findings, severity, and remediation suggestions.
-    """
-    ctx = context or {}
-    config = AgentAuditConfig(
-        mode=AuditMode(mode),
-        domain=ctx.get("domain", "general"),
-        positive_outcome=ctx.get("positive", "approved"),
-        negative_outcome=ctx.get("negative", "rejected"),
-        output_type="binary",
-        protected_attributes=attributes or ["gender", "race", "age"],
-        backend=backend,
-        api_key=api_key,
-    )
-    auditor = AgentAuditor(config)
-    return await auditor.run(system_prompt=system_prompt, seed_case=seed_case)
