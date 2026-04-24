@@ -1,0 +1,30 @@
+Dataset Audit - Niru Complete
+
+WHAT: Bias detection for datasets
+WHERE: /library/dataset_audit/
+FILES: 12 Python + 3 Docs
+
+USAGE:
+from library.dataset_audit import audit_dataset
+
+report = audit_dataset(
+    data="data.csv",
+    protected_attributes=["gender", "race"],
+    target_column="hired",
+    positive_value=1
+)
+
+print(report.overall_severity)  # CRITICAL/MODERATE/LOW/CLEAR
+print(report.to_text())
+
+RUN TEST:
+cd Nobias
+pip install pandas numpy scipy scikit-learn imbalanced-learn
+python test_simple.py
+
+COMMIT:
+git add library/dataset_audit/
+git commit -m "dataset_audit: your changes"
+git push
+
+STATUS: Complete ✅
