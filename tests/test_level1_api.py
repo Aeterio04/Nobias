@@ -18,6 +18,7 @@ load_dotenv(dotenv_path=env_path)
 sys.path.insert(0, str(Path(__file__).parent.parent / "library"))
 
 from agent_audit import audit_agent
+from agent_audit.report import export_json, export_string
 
 
 async def test_level1_quick_audit():
@@ -85,6 +86,42 @@ Purpose: Home purchase
         assert 0 <= report.overall_cfr <= 1
         
         print("\n✅ All assertions passed!")
+        
+        # Export reports
+        print("\n" + "=" * 70)
+        print("EXPORTING REPORTS")
+        print("=" * 70)
+        
+        # JSON export
+        json_path = Path(__file__).parent / "output" / "test_level1_report.json"
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        export_json(report, json_path, comprehensive=True)
+        print(f"\n📄 JSON Report saved to: {json_path}")
+        print(f"   File size: {json_path.stat().st_size:,} bytes")
+        
+        # String export
+        string_report = export_string(report, detailed=True)
+        txt_path = Path(__file__).parent / "output" / "test_level1_report.txt"
+        txt_path.write_text(string_report, encoding='utf-8')
+        print(f"\n📄 Text Report saved to: {txt_path}")
+        print(f"   Lines: {len(string_report.splitlines())}")
+        
+        # Print string report
+        print("\n" + "=" * 70)
+        print("STRING REPORT OUTPUT")
+        print("=" * 70)
+        print(string_report)
+        
+        # Print JSON summary (first 50 lines)
+        print("\n" + "=" * 70)
+        print("JSON REPORT PREVIEW (first 50 lines)")
+        print("=" * 70)
+        json_content = json_path.read_text()
+        json_lines = json_content.splitlines()
+        print("\n".join(json_lines[:50]))
+        if len(json_lines) > 50:
+            print(f"\n... ({len(json_lines) - 50} more lines)")
+        
         return True
         
     except Exception as e:

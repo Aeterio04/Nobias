@@ -106,6 +106,6 @@ def should_run_intersectional(
     # Standard mode: run only if ≥ min_flagged attributes are flagged
     flagged_count = sum(
         1 for f in single_findings
-        if f.get("severity", "CLEAR") != "CLEAR"
+        if f.severity != "CLEAR"  # AgentFinding object, not dict
     )
     return flagged_count >= min_flagged

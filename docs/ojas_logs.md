@@ -247,3 +247,46 @@ Users can choose their complexity level from one-liner to full manual control.
 - Shows JSON (comprehensive and basic), String (detailed and summary), and PDF exports
 - Includes file size and line count reporting
 - Saves all outputs to output/ directory
+
+
+## 2024-XX-XX - Updated all tests to use new report module
+- test_level1_api.py: Exports JSON and string reports, prints both
+- test_level2_api.py: Exports after-report with improvements
+- test_level3_api.py: Creates minimal report from manual pipeline results
+- All tests save reports to tests/output/ directory
+- All tests print string report to console
+- JSON preview (first 50 lines) printed in Level 1 test
+
+
+## 2024-XX-XX - Fixed Windows encoding issues in report generation
+- Added UTF-8 encoding to all file writes in tests
+- Made severity badges Windows-compatible with ASCII fallback
+- Auto-detects console encoding and uses ASCII symbols on Windows
+- Emoji badges: 🔴🟡🟢✅ → ASCII: [!][~][*][+]
+
+
+## 2024-XX-XX - Created borderline case test for better bias detection
+- test_level1_borderline.py uses marginal candidate (credit 650, income $42k)
+- Explains why borderline cases are needed for bias detection
+- Shows decision distribution (approve/deny split)
+- Warns if all candidates get same decision (too strong/weak case)
+- Uses standard mode instead of quick for more thorough testing
+
+
+## 2024-XX-XX - Fixed bug in intersectional statistics
+- Fixed should_run_intersectional() treating AgentFinding as dict
+- Changed f.get("severity") to f.severity (object attribute access)
+- Bug was causing AttributeError during standard/full mode audits
+
+
+## 2024-XX-XX - Fixed interpreter backend detection
+- Interpreter._call_cloud() now detects backend from model name
+- Supports Groq (llama/mixtral/gemma), Anthropic (claude), OpenAI (gpt)
+- Previously always defaulted to OpenAI causing auth errors with Groq keys
+- Now uses same backend as main audit for interpretation/remediation
+
+
+## 2024-XX-XX - Updated borderline test to use smaller model
+- Changed from llama-3.3-70b-versatile to llama-3.1-8b-instant
+- Reduces token usage to avoid rate limits on free tier
+- 8b model is faster and uses ~8x fewer tokens than 70b

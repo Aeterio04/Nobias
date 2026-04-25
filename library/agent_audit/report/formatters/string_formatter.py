@@ -17,6 +17,7 @@ from agent_audit.report.sections import (
     build_raw_data_section,
 )
 from agent_audit.report.utils import wrap_text, severity_badge
+import sys
 
 
 def export_string(report: AgentAuditReport, detailed: bool = True) -> str:
@@ -30,6 +31,9 @@ def export_string(report: AgentAuditReport, detailed: bool = True) -> str:
     Returns:
         Formatted string report.
     """
+    # Detect if we're on Windows with limited console encoding
+    use_emoji = sys.platform != 'win32' or sys.stdout.encoding.lower() in ['utf-8', 'utf8']
+    
     if not detailed:
         return build_report_summary(report)
     
@@ -86,7 +90,7 @@ def export_string(report: AgentAuditReport, detailed: bool = True) -> str:
     results = build_results_section(report)
     lines.append("SECTION 3: RESULTS & STATISTICS")
     lines.append("─" * 80)
-    lines.append(f"Overall Severity:  {results['overall']['severity_badge']}")
+    lines.append(f"Overall Severity:  {severity_badge(results['overall']['severity'], use_emoji)}")
     lines.append(f"Overall CFR:       {results['overall']['overall_cfr_percent']}")
     lines.append(f"Benchmark Range:   {results['overall']['benchmark_range']['min_percent']} - {results['overall']['benchmark_range']['max_percent']}")
     lines.append(f"Total Findings:    {results['overall']['total_findings']}")
@@ -95,7 +99,7 @@ def export_string(report: AgentAuditReport, detailed: bool = True) -> str:
     lines.append("Severity Breakdown:")
     for sev, count in results['severity_breakdown'].items():
         if count > 0:
-            badge = severity_badge(sev)
+            badge = severity_badge(sev, use_emoji)
             lines.append(f"  {badge:20s} {count}")
     lines.append("")
     

@@ -12,22 +12,31 @@ Helper functions for report generation:
 from __future__ import annotations
 
 
-def severity_badge(severity: str) -> str:
+def severity_badge(severity: str, use_emoji: bool = True) -> str:
     """
     Return a formatted severity badge with emoji.
     
     Args:
         severity: Severity level (CRITICAL, MODERATE, LOW, CLEAR).
+        use_emoji: If False, uses ASCII-safe symbols for Windows compatibility.
     
     Returns:
         Formatted badge string.
     """
-    badges = {
-        "CRITICAL": "🔴 CRITICAL",
-        "MODERATE": "🟡 MODERATE",
-        "LOW": "🟢 LOW",
-        "CLEAR": "✅ CLEAR",
-    }
+    if use_emoji:
+        badges = {
+            "CRITICAL": "🔴 CRITICAL",
+            "MODERATE": "🟡 MODERATE",
+            "LOW": "🟢 LOW",
+            "CLEAR": "✅ CLEAR",
+        }
+    else:
+        badges = {
+            "CRITICAL": "[!] CRITICAL",
+            "MODERATE": "[~] MODERATE",
+            "LOW": "[*] LOW",
+            "CLEAR": "[+] CLEAR",
+        }
     return badges.get(severity, severity)
 
 

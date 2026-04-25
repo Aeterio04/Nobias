@@ -99,14 +99,37 @@ class Interpreter:
         if not self.api_key:
             raise ValueError("API key required for cloud interpreter backend")
 
-        # Default to OpenAI
-        from agent_audit.interrogation.backends.openai import OpenAIBackend
-        backend = OpenAIBackend(
-            api_key=self.api_key,
-            model=self.model,
-            temperature=0.0,
-            max_tokens=2048,
-        )
+        # Detect backend from model name
+        model_lower = self.model.lower()
+        
+        if any(x in model_lower for x in ["llama", "mixtral", "gemma", "groq"]):
+            # Use Groq
+            from agent_audit.interrogation.backends.groq import GroqBackend
+            backend = GroqBackend(
+                api_key=self.api_key,
+                model=self.model,
+                temperature=0.0,
+                max_tokens=2048,
+            )
+        elif model_lower.startswith("claude"):
+            # Use Anthropic
+            from agent_audit.interrogation.backends.anthropic import AnthropicBackend
+            backend = AnthropicBackend(
+                api_key=self.api_key,
+                model=self.model,
+                temperature=0.0,
+                max_tokens=2048,
+            )
+        else:
+            # Default to OpenAI
+            from agent_audit.interrogation.backends.openai import OpenAIBackend
+            backend = OpenAIBackend(
+                api_key=self.api_key,
+                model=self.model,
+                temperature=0.0,
+                max_tokens=2048,
+            )
+        
         return await backend.call(prompt)
 
     def _parse_response(

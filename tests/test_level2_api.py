@@ -18,6 +18,7 @@ load_dotenv(dotenv_path=env_path)
 sys.path.insert(0, str(Path(__file__).parent.parent / "library"))
 
 from agent_audit import AgentAuditor
+from agent_audit.report import export_json, export_string
 
 
 async def test_level2_before_after():
@@ -115,6 +116,32 @@ Recommendations: Excellent from teachers
         assert comparison['total_findings_after'] >= 0
         
         print("\n✅ All assertions passed!")
+        
+        # Export AFTER report (the improved one)
+        print("\n" + "=" * 70)
+        print("EXPORTING AFTER REPORT")
+        print("=" * 70)
+        
+        # JSON export
+        json_path = Path(__file__).parent / "output" / "test_level2_after_report.json"
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        export_json(report_after, json_path, comprehensive=True)
+        print(f"\n📄 JSON Report saved to: {json_path}")
+        print(f"   File size: {json_path.stat().st_size:,} bytes")
+        
+        # String export
+        string_report = export_string(report_after, detailed=True)
+        txt_path = Path(__file__).parent / "output" / "test_level2_after_report.txt"
+        txt_path.write_text(string_report, encoding='utf-8')
+        print(f"\n📄 Text Report saved to: {txt_path}")
+        print(f"   Lines: {len(string_report.splitlines())}")
+        
+        # Print string report
+        print("\n" + "=" * 70)
+        print("STRING REPORT OUTPUT (AFTER)")
+        print("=" * 70)
+        print(string_report)
+        
         return True
         
     except Exception as e:

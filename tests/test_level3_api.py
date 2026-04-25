@@ -23,6 +23,8 @@ from agent_audit import (
     AgentConnectionMode,
     PromptAgentConfig,
 )
+from agent_audit.models import AgentAuditReport, PersonaResult
+from agent_audit.report import export_json, export_string
 
 
 async def test_level3_manual_pipeline():
@@ -153,6 +155,60 @@ Projects: Built predictive models for customer churn
         
         print(f"\n✅ All assertions passed!")
         print(f"   Total API calls: {call_count}/20")
+        
+        # Create a minimal report for Level 3 (manual pipeline)
+        print("\n" + "=" * 70)
+        print("CREATING MINIMAL REPORT FROM MANUAL PIPELINE")
+        print("=" * 70)
+        
+        # Convert results to PersonaResult objects
+        persona_results = []
+        for result in results:
+            persona_results.append(PersonaResult(
+                persona_id=f"persona_{result['persona_id']}",
+                attributes=result['attributes'],
+                test_type="pairwise",
+                decision=result['decision'].lower(),
+                score=None,
+                decision_variance=0.0,
+                raw_outputs=[result['response']],
+            ))
+        
+        # Create minimal report
+        minimal_report = AgentAuditReport(
+            audit_id=f"level3-manual-{call_count}calls",
+            mode="manual",
+            total_calls=call_count,
+            duration_seconds=0.0,  # Not tracked in manual mode
+            overall_severity="UNKNOWN",
+            overall_cfr=0.0,
+            findings=[],  # No statistical analysis in manual mode
+            persona_results=persona_results,
+        )
+        
+        # Export reports
+        print("\n📊 Exporting manual pipeline results...")
+        
+        # JSON export
+        json_path = Path(__file__).parent / "output" / "test_level3_manual_report.json"
+        json_path.parent.mkdir(parents=True, exist_ok=True)
+        export_json(minimal_report, json_path, comprehensive=True)
+        print(f"\n📄 JSON Report saved to: {json_path}")
+        print(f"   File size: {json_path.stat().st_size:,} bytes")
+        
+        # String export
+        string_report = export_string(minimal_report, detailed=True)
+        txt_path = Path(__file__).parent / "output" / "test_level3_manual_report.txt"
+        txt_path.write_text(string_report, encoding='utf-8')
+        print(f"\n📄 Text Report saved to: {txt_path}")
+        print(f"   Lines: {len(string_report.splitlines())}")
+        
+        # Print string report
+        print("\n" + "=" * 70)
+        print("STRING REPORT OUTPUT (MANUAL PIPELINE)")
+        print("=" * 70)
+        print(string_report)
+        
         return True
         
     except Exception as e:
