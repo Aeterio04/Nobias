@@ -130,3 +130,50 @@ Users can choose their complexity level from one-liner to full manual control.
 - Add missing statistics modules (reasoning_trace.py, context_impact.py)
 - Create PDF report generation
 - Add more examples and documentation
+
+---
+
+## 2025-04-24 - Merged Dataset Audit Module from Teammate
+
+**Changes Merged:**
+- ✅ Complete dataset_audit module implementation (2,072 lines added)
+- ✅ 7 bias detection types implemented
+- ✅ Comprehensive documentation from teammate (niru_*)
+
+**Dataset Audit Module Structure:**
+- `__init__.py` - Public API for dataset auditing
+- `ingestion.py` - Data loading and validation
+- `representation.py` - Representation bias detection
+- `proxy_detection.py` - Proxy variable detection
+- `label_bias.py` - Label bias analysis
+- `missing_data.py` - Missing data patterns
+- `divergence.py` - Distribution divergence
+- `intersectional.py` - Intersectional bias
+- `remediation.py` - Bias mitigation strategies
+- `report.py` - Report generation
+- `models.py` - Data models
+- `severity.py` - Severity classification
+
+**Documentation Added:**
+- `docs/niru_README.md` - Dataset audit overview
+- `docs/niru_start_here.md` - Getting started guide
+- `docs/niru_how_to_run.md` - Usage instructions
+- `docs/niru_implementation.md` - Implementation details
+- `docs/niru_complete.txt` - Completion checklist
+- `library/dataset_audit/OVERVIEW.md` - Module documentation
+- `library/dataset_audit/README.md` - Quick reference
+
+**Merge Status:**
+✅ Fast-forward merge successful (no conflicts)
+✅ All files integrated cleanly
+✅ Agent audit module unaffected
+
+**Project Status:**
+- Module 1 (Dataset Audit): ✅ Complete
+- Module 2 (Model Audit): ⏳ In progress (teammate)
+- Module 3 (Agent Audit): ✅ Complete (98%)
+
+**Next Steps:**
+- Review dataset_audit integration
+- Test cross-module compatibility
+- Wait for model_audit module merge
