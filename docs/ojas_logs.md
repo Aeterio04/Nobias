@@ -177,3 +177,73 @@ Users can choose their complexity level from one-liner to full manual control.
 - Review dataset_audit integration
 - Test cross-module compatibility
 - Wait for model_audit module merge
+
+
+## 2024-XX-XX - Created requirements.txt
+- Added core dependencies: pandas, numpy, scipy
+- Added LLM backends: groq, openai, anthropic
+- Added aiohttp for Ollama local support
+- Added sentence-transformers for embeddings
+- Added python-dotenv for env management
+
+
+## 2024-XX-XX - Updated full_audit_example.py to use library/.env
+- Added dotenv import and load_dotenv() call
+- Updated instructions to reference library/.env instead of export command
+- Changed error message to point to library/.env file
+
+
+## 2024-XX-XX - Verified full pipeline orchestrator implementation
+- Confirmed PipelineOrchestrator in orchestrator.py handles all 5 layers
+- Level 1 (audit_agent function) and Level 2 (AgentAuditor class) both use PipelineOrchestrator internally
+- Level 3 (manual pipeline) exports individual layer functions for expert control
+- All 3 API levels are fully implemented and working together
+- Example in full_audit_example.py demonstrates all 3 levels
+
+
+## 2024-XX-XX - Created 3 test files for all API levels
+- test_level1_api.py: Tests one-liner audit_agent() function with quick mode
+- test_level2_api.py: Tests AgentAuditor class with before/after comparison
+- test_level3_api.py: Tests manual pipeline with <20 API calls (limited personas)
+- Added tests/README.md with setup and run instructions
+- All tests use library/.env for API key management
+
+
+## 2024-XX-XX - Fixed audit_agent() function initialization bug
+- Changed audit_agent() to use AgentAuditor.from_prompt() factory method
+- Previously was creating AgentAuditor directly without connection config
+- Now properly initializes connection mode and config
+
+
+## 2024-XX-XX - Completely rebuilt report generation module
+- Added 5 comprehensive sections: Health, Config, Results, Interpretation, Raw Data
+- Section 1: API calls, tokens, duration, performance metrics
+- Section 2: Attributes, personas, test variants, context primes
+- Section 3: Severity, CFR, MASD, parity, decision distribution, variance
+- Section 4: LLM interpretation, prompt suggestions, stress test results
+- Section 5: Raw persona data, CAFFE export
+- Added export_json() with comprehensive mode
+- Added export_string() with detailed text formatting
+- Added export_pdf() with charts and tables using reportlab
+- Added reportlab and matplotlib to requirements.txt
+- All exports are non-LLM generated (pure data formatting)
+
+
+## 2024-XX-XX - Restructured report module into modular package
+- Created library/agent_audit/report/ package structure
+- report/utils.py: Helper functions (badges, wrapping, duration, std_dev, token estimation)
+- report/sections.py: Section builders (health, config, results, interpretation, raw_data)
+- report/generator.py: Main report generator combining all sections
+- report/formatters/json_formatter.py: JSON export with comprehensive mode
+- report/formatters/string_formatter.py: Human-readable text export
+- report/formatters/pdf_formatter.py: PDF export with charts and tables
+- report/__init__.py: Clean public API exposing all functions
+- Deleted old monolithic report.py file
+- Fully modular and maintainable structure
+
+
+## 2024-XX-XX - Created report generation example
+- examples/report_generation_example.py demonstrates all export formats
+- Shows JSON (comprehensive and basic), String (detailed and summary), and PDF exports
+- Includes file size and line count reporting
+- Saves all outputs to output/ directory

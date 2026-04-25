@@ -1,31 +1,58 @@
 """
-agent_audit.report — Report Generation & Export
-==================================================
+agent_audit.report.generator — Main Report Generator
+=====================================================
 
-Compiles all findings, persona results, interpretations, and
-suggestions into the final AgentAuditReport object.
-
-Export formats:
-    - JSON: Full structured report
-    - CAFFE: CAFFE-compliant test suite JSON
-    - PDF: Human-readable report with charts (future)
-
-Also provides compare_audits() for before/after remediation tracking.
+Core report generation logic that combines all sections.
 """
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
+
 from agent_audit.models import AgentAuditReport
-from agent_audit.interpreter.remediation import compare_audits
+from agent_audit.report.sections import (
+    build_health_section,
+    build_config_section,
+    build_results_section,
+    build_interpretation_section,
+    build_raw_data_section,
+)
+from agent_audit.report.utils import severity_badge
+
+
+def generate_comprehensive_report(report: AgentAuditReport) -> dict[str, Any]:
+    """
+    Generate a comprehensive report with all sections.
+    
+    Combines all section builders into a single structured report.
+    
+    Args:
+        report: The AgentAuditReport to process.
+    
+    Returns:
+        Dict with all report sections.
+    """
+    return {
+        "report_version": "1.0",
+        "generated_at": datetime.utcnow().isoformat(),
+        "section_1_health": build_health_section(report),
+        "section_2_configuration": build_config_section(report),
+        "section_3_results": build_results_section(report),
+        "section_4_interpretation": build_interpretation_section(report),
+        "section_5_raw_data": build_raw_data_section(report),
+    }
 
 
 def build_report_summary(report: AgentAuditReport) -> str:
     """
-    Generate a human-readable summary of the audit report.
-
+    Generate a brief human-readable summary.
+    
+    Legacy function for quick summaries.
+    
     Args:
         report: The complete audit report.
-
+    
     Returns:
         Multi-line summary string.
     """
@@ -36,7 +63,7 @@ def build_report_summary(report: AgentAuditReport) -> str:
         f"Duration:    {report.duration_seconds:.1f}s",
         f"API Calls:   {report.total_calls}",
         f"",
-        f"Overall Severity: {_severity_badge(report.overall_severity)}",
+        f"Overall Severity: {severity_badge(report.overall_severity)}",
         f"Overall CFR:      {report.overall_cfr:.1%}",
         f"Benchmark Range:  {report.benchmark_range[0]:.1%} – {report.benchmark_range[1]:.1%}",
         f"",
@@ -76,15 +103,7 @@ def build_report_summary(report: AgentAuditReport) -> str:
     return "\n".join(lines)
 
 
-def _severity_badge(severity: str) -> str:
-    """Return a formatted severity badge."""
-    badges = {
-        "CRITICAL": "🔴 CRITICAL",
-        "MODERATE": "🟡 MODERATE",
-        "LOW":      "🟢 LOW",
-        "CLEAR":    "✅ CLEAR",
-    }
-    return badges.get(severity, severity)
-
-
-__all__ = ["compare_audits", "build_report_summary"]
+__all__ = [
+    "generate_comprehensive_report",
+    "build_report_summary",
+]

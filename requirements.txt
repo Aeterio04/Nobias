@@ -1,0 +1,22 @@
+# Core dependencies
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# LLM API clients
+groq>=0.4.0
+openai>=1.0.0
+anthropic>=0.18.0
+
+# Local LLM support
+aiohttp>=3.9.0
+
+# Embeddings (optional, for semantic similarity)
+sentence-transformers>=2.2.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Report generation
+reportlab>=4.0.0
+matplotlib>=3.7.0

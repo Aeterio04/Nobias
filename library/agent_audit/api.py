@@ -77,27 +77,24 @@ async def audit_agent(
         >>> print(report.overall_severity)
         >>> print(report.overall_cfr)
     """
-    # Build config
-    config = AgentAuditConfig(
-        mode=AuditMode(mode),
+    # Create auditor using from_prompt factory
+    auditor = AgentAuditor.from_prompt(
+        system_prompt=system_prompt,
+        api_key=api_key,
+        mode=mode,
+        model=model,
+        attributes=attributes,
         domain=domain,
         positive_outcome=positive_outcome,
         negative_outcome=negative_outcome,
         output_type=output_type,
-        protected_attributes=attributes or ["gender", "race", "age"],
-        backend=_detect_backend(model),
-        api_key=api_key,
-        model=model,
-        temperature=0.0,
         rate_limit_rps=rate_limit_rps,
         enable_stress_test=enable_stress_test,
     )
-
-    # Create auditor and run
-    auditor = AgentAuditor(config)
+    
+    # Run audit
     return await auditor.run(
         seed_case=seed_case,
-        system_prompt=system_prompt,
         progress_callback=progress_callback,
     )
 

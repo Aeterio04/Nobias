@@ -7,15 +7,20 @@ Demonstrates the three ways to use the Agent Audit library:
     Level 3: Manual pipeline (experts)
 
 Before running:
-1. Install: pip install groq pandas numpy scipy sentence-transformers
+1. Install: pip install -r requirements.txt
 2. Get API key from: https://console.groq.com/
-3. Set: export GROQ_API_KEY="gsk_..."
+3. Create library/.env file with: GROQ_API_KEY=gsk_...
 """
 
 import asyncio
 import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from library/.env
+env_path = Path(__file__).parent.parent / "library" / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Add library to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "library"))
@@ -79,7 +84,7 @@ async def level1_example():
             seed_case=SEED_CASE,
             api_key=api_key,
             mode="quick",  # Fast test
-            model="llama-3.1-70b-versatile",
+            model="llama-3.3-70b-versatile",
             attributes=["gender", "race"],
             domain="hiring",
         )
@@ -126,7 +131,7 @@ async def level2_example():
         system_prompt=SYSTEM_PROMPT,
         api_key=api_key,
         mode="quick",
-        model="llama-3.1-70b-versatile",
+        model="llama-3.3-70b-versatile",
         attributes=["gender", "race"],
         domain="hiring",
     )
@@ -211,7 +216,7 @@ async def level3_example():
         print("1. Building agent connector...")
         config = PromptAgentConfig(
             system_prompt=SYSTEM_PROMPT,
-            model_backend="llama-3.1-70b-versatile",
+            model_backend="llama-3.3-70b-versatile",
             api_key=api_key,
         )
         connector = build_agent_connector(AgentConnectionMode.SYSTEM_PROMPT, config)
@@ -262,9 +267,9 @@ async def main():
     
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        print("\n⚠️  GROQ_API_KEY not found in environment")
+        print("\n⚠️  GROQ_API_KEY not found in library/.env")
         print("Get your free API key from: https://console.groq.com/")
-        print("\nSet it with: export GROQ_API_KEY='gsk_...'")
+        print("\nCreate library/.env file with: GROQ_API_KEY=gsk_...")
         print("\nRunning examples in demo mode (will skip actual API calls)...\n")
 
     # Run all three levels
