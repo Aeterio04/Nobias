@@ -221,8 +221,11 @@ def _fill_template(template: dict, input_text: str) -> dict:
     Returns:
         Filled template dict.
     """
+    # Properly escape the input text for JSON
+    escaped_input = json.dumps(input_text)[1:-1]  # Remove surrounding quotes
+    
     template_str = json.dumps(template)
-    filled_str = template_str.replace("{input}", input_text)
+    filled_str = template_str.replace("{input}", escaped_input)
     return json.loads(filled_str)
 
 

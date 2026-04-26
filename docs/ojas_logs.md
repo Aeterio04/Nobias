@@ -290,3 +290,29 @@ Users can choose their complexity level from one-liner to full manual control.
 - Changed from llama-3.3-70b-versatile to llama-3.1-8b-instant
 - Reduces token usage to avoid rate limits on free tier
 - 8b model is faster and uses ~8x fewer tokens than 70b
+
+
+## 2024-XX-XX - Added retry logic to Groq backend for rate limits
+- GroqBackend.call() now retries on rate limit errors (429)
+- Max 2 retries with 3 second delay between attempts
+- Prints warning message when retrying
+- Raises error after all retries exhausted
+- Handles both groq.RateLimitError and generic 429 errors
+
+
+## 2024-XX-XX - Created LangGraph API endpoint example
+- examples/langgraph_agent_server.py: FastAPI server with LangGraph agent
+- tests/test_api_endpoint.py: Test auditing agent via API endpoint
+- examples/README_langgraph.md: Complete setup and usage guide
+- Demonstrates API endpoint mode (production agent auditing)
+- Agent built with LangGraph state machine
+- Server runs on localhost:8000 with /evaluate endpoint
+- Test checks server health, tests endpoint, runs full audit
+- Added langgraph, langchain, fastapi, uvicorn to requirements.txt
+
+
+## 2024-XX-XX - Fixed JSON encoding in API endpoint connector
+- Fixed _fill_template() to properly escape input text for JSON
+- Input text with newlines/special chars now handled correctly
+- Uses json.dumps() to escape, then strips quotes
+- Prevents "Invalid control character" errors in API mode
