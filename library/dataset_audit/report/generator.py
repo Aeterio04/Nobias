@@ -15,6 +15,7 @@ from .sections import (
     RemediationSection,
     ComplianceSection,
     ValiditySection,
+    ActionableInsightsSection,
 )
 
 
@@ -26,7 +27,7 @@ def generate_report(audit_report, sections: List[str] = None) -> Dict[str, Any]:
         audit_report: DatasetAuditReport object
         sections: List of section names to include. If None, includes all sections.
                  Valid sections: 'health', 'config', 'representation', 'proxy_features',
-                                'findings', 'remediation', 'compliance', 'validity'
+                                'findings', 'remediation', 'compliance', 'validity', 'actionable_insights'
     
     Returns:
         Dictionary containing all requested report sections
@@ -42,6 +43,7 @@ def generate_report(audit_report, sections: List[str] = None) -> Dict[str, Any]:
             'remediation',
             'compliance',
             'validity',
+            'actionable_insights',
         ]
     
     report_data = {}
@@ -70,5 +72,8 @@ def generate_report(audit_report, sections: List[str] = None) -> Dict[str, Any]:
     
     if 'validity' in sections:
         report_data['validity'] = ValiditySection.generate(audit_report)
+    
+    if 'actionable_insights' in sections:
+        report_data['actionable_insights'] = ActionableInsightsSection.generate(audit_report)
     
     return report_data

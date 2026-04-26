@@ -1,0 +1,6 @@
+Dataset: test_data_biased.csv
+Severity: CRITICAL
+Health Score: 45.5/100
+Findings: 5 critical, 11 moderate
+Proxy Features: 10
+Compliance: FAIL

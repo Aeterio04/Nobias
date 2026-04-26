@@ -286,16 +286,24 @@ class ModelAuditReport:
             "shap_available": self.shap_analysis is not None,
         }
     
-    def export(self, output_path: str, format: str = "json") -> None:
+    def export(
+        self,
+        output_path: str,
+        format: str = "json",
+        include_actionable_insights: bool = True,
+        dataset_audit_path: Optional[str] = None
+    ) -> None:
         """
         Export report to file.
         
         Args:
             output_path: Path to save report
-            format: Output format ("json" or "text")
+            format: Output format ("json", "comprehensive", "text", "summary", "actionable")
+            include_actionable_insights: Whether to also generate actionable insights JSON
+            dataset_audit_path: Optional path to dataset audit for bias amplification analysis
         """
-        from .report import export_report
-        export_report(self, output_path, format)
+        from .report_export import export_report
+        export_report(self, output_path, format, include_actionable_insights, dataset_audit_path)
     
     def get_critical_findings(self) -> list[ModelFinding]:
         """Get all critical severity findings."""

@@ -16,6 +16,7 @@ from .sections import (
     RemediationSection,
     ComplianceSection,
     ValiditySection,
+    ActionableInsightsSection,
 )
 from .formatters import (
     JSONFormatter,
@@ -33,6 +34,7 @@ __all__ = [
     'RemediationSection',
     'ComplianceSection',
     'ValiditySection',
+    'ActionableInsightsSection',
     'JSONFormatter',
     'StringFormatter',
     'PDFFormatter',

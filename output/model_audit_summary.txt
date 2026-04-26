@@ -1,0 +1,5 @@
+Model: biased_model
+Severity: MODERATE
+Flip Rate: 0.00%
+Findings: 4 critical, 9 moderate
+Metrics: 6/20 passed (30%)
