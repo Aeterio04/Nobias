@@ -17,6 +17,8 @@ from agent_audit.report.sections import (
     build_results_section,
     build_interpretation_section,
     build_raw_data_section,
+    build_compliance_section,
+    build_validity_section,
 )
 from agent_audit.report.utils import severity_badge
 
@@ -26,6 +28,7 @@ def generate_comprehensive_report(report: AgentAuditReport) -> dict[str, Any]:
     Generate a comprehensive report with all sections.
     
     Combines all section builders into a single structured report.
+    Includes FairSight compliance sections.
     
     Args:
         report: The AgentAuditReport to process.
@@ -34,13 +37,15 @@ def generate_comprehensive_report(report: AgentAuditReport) -> dict[str, Any]:
         Dict with all report sections.
     """
     return {
-        "report_version": "1.0",
+        "report_version": "1.1",  # Updated for FairSight
         "generated_at": datetime.utcnow().isoformat(),
         "section_1_health": build_health_section(report),
         "section_2_configuration": build_config_section(report),
         "section_3_results": build_results_section(report),
         "section_4_interpretation": build_interpretation_section(report),
         "section_5_raw_data": build_raw_data_section(report),
+        "section_6_compliance": build_compliance_section(report),
+        "section_7_validity": build_validity_section(report),
     }
 
 

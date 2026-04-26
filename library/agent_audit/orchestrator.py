@@ -32,6 +32,8 @@ from agent_audit.models import (
     PersonaResult,
     Interpretation,
     PromptSuggestion,
+    AuditIntegrity,
+    ModelFingerprint,
 )
 
 # Layer 2 imports
@@ -53,6 +55,15 @@ from agent_audit.statistics.intersectional import (
 )
 from agent_audit.statistics.significance import compute_significance
 from agent_audit.statistics.severity import classify_severity, classify_overall_severity
+from agent_audit.statistics.confidence import (
+    compute_rate_with_ci,
+    apply_bonferroni_correction,
+)
+from agent_audit.statistics.eeoc_air import compute_all_eeoc_air
+from agent_audit.statistics.stability import (
+    compute_overall_stability,
+    compute_bias_adjusted_cfr,
+)
 
 # Layer 5 imports
 from agent_audit.interpreter.interpreter import Interpreter, InterpreterBackend
@@ -106,7 +117,7 @@ class PipelineOrchestrator:
 
         # ── Layer 4: Statistical Detection ──────────────────────────────
         self._progress(progress_callback, "Computing statistics", 3, 5)
-        findings, persona_results = await self._compute_statistics(completed_personas)
+        findings, persona_results, df = await self._compute_statistics(completed_personas)
 
         # ── Layer 5: LLM Interpretation ─────────────────────────────────
         self._progress(progress_callback, "Interpreting findings", 4, 5)
@@ -127,6 +138,94 @@ class PipelineOrchestrator:
         overall_cfr = self._compute_overall_cfr(findings)
         overall_severity = classify_overall_severity(findings)
 
+        # ── FairSight Compliance Metrics ────────────────────────────────
+        
+        # 1. EEOC Adverse Impact Ratio
+        eeoc_air_results = compute_all_eeoc_air(df, self.config.protected_attributes)
+        
+        # 2. Stochastic Stability Score
+        # Extract decision lists from persona results
+        persona_decision_lists = []
+        for persona in persona_results:
+            # If we have multiple runs, extract all decisions
+            # Otherwise, use the single decision
+            if hasattr(persona, 'raw_outputs') and len(persona.raw_outputs) > 1:
+                # Multiple runs available - would need to re-parse each output
+                # For now, create a list with the majority decision repeated
+                persona_decision_lists.append([persona.decision] * len(persona.raw_outputs))
+            else:
+                # Single run - use as-is
+                persona_decision_lists.append([persona.decision])
+        
+        stability_results = compute_overall_stability(persona_decision_lists)
+        
+        # 3. Bias-Adjusted CFR (apply to all CFR findings)
+        # Extract within-persona flip rates for BA-CFR calculation
+        within_persona_flip_rates = []
+        for decisions in persona_decision_lists:
+            if len(decisions) > 1:
+                # Calculate flip rate for this persona
+                flip_rate = len(set(decisions)) / len(decisions)
+                within_persona_flip_rates.append(flip_rate)
+        
+        for finding in findings:
+            if finding.metric == "cfr":
+                ba_cfr_result = compute_bias_adjusted_cfr(
+                    finding.value,
+                    within_persona_flip_rates if within_persona_flip_rates else [0.0]
+                )
+                finding.details["ba_cfr"] = ba_cfr_result["ba_cfr"]
+                finding.details["ba_cfr_details"] = ba_cfr_result
+        
+        # 4. Confidence Intervals (add to all rate-based findings)
+        confidence_intervals = {}
+        for finding in findings:
+            if finding.metric in ["cfr", "demographic_parity"]:
+                # Get sample size from details
+                n = finding.details.get("n_total", len(persona_results))
+                rate_ci = compute_rate_with_ci(finding.value, n)
+                confidence_intervals[finding.finding_id] = rate_ci
+        
+        # 5. Bonferroni Correction
+        # Collect all p-values from statistical tests
+        p_values = []
+        for finding in findings:
+            if finding.metric in ["cfr", "masd", "demographic_parity"]:
+                p_values.append(finding.p_value)
+        
+        bonferroni_results = apply_bonferroni_correction(p_values, alpha=0.05)
+        
+        # Apply corrected alpha to findings
+        for finding in findings:
+            if finding.metric in ["cfr", "masd", "demographic_parity"]:
+                finding.details["bonferroni_significant"] = (
+                    finding.p_value < bonferroni_results["corrected_alpha"]
+                )
+        
+        # 6. Audit Integrity Hash
+        audit_integrity = AuditIntegrity(
+            audit_hash=AuditIntegrity.compute_hash({
+                "findings": [f.to_dict() for f in findings],
+                "persona_results": [p.__dict__ for p in persona_results],
+                "config": self.config.__dict__,
+            }),
+            prompts_hash=AuditIntegrity.compute_hash([p.to_dict() for p in completed_personas]),
+            responses_hash=AuditIntegrity.compute_hash([
+                p.raw_outputs for p in persona_results
+            ]),
+            config_hash=AuditIntegrity.compute_hash(self.config.__dict__),
+        )
+        
+        # 7. Model Fingerprint
+        model_fingerprint = ModelFingerprint(
+            model_id=self.config.model,
+            temperature=self.config.temperature,
+            max_tokens=self.config.max_tokens,
+            system_prompt_hash=AuditIntegrity.compute_hash(system_prompt or ""),
+            sdk_version="agent_audit-1.0.0",
+            backend=self.config.backend,
+        )
+
         report = AgentAuditReport(
             audit_id=audit_id,
             mode=self.config.mode.value,
@@ -142,6 +241,13 @@ class PipelineOrchestrator:
             stress_test_results=stress_test_results,
             caffe_test_suite=[p.to_dict() for p in completed_personas],
             timestamp=datetime.utcnow().isoformat(),
+            # FairSight Compliance
+            audit_integrity=audit_integrity,
+            model_fingerprint=model_fingerprint,
+            eeoc_air=eeoc_air_results,
+            stability=stability_results,
+            confidence_intervals=confidence_intervals,
+            bonferroni_correction=bonferroni_results,
         )
 
         return report
@@ -188,8 +294,8 @@ class PipelineOrchestrator:
 
     async def _compute_statistics(
         self, personas: list[CAFFETestCase]
-    ) -> tuple[list[AgentFinding], list[PersonaResult]]:
-        """Compute all statistical metrics."""
+    ) -> tuple[list[AgentFinding], list[PersonaResult], Any]:
+        """Compute all statistical metrics including FairSight compliance."""
         # Build results DataFrame
         df = self._build_results_dataframe(personas)
         persona_results = self._extract_persona_results(personas)
@@ -290,7 +396,7 @@ class PipelineOrchestrator:
                     )
                 )
 
-        return findings, persona_results
+        return findings, persona_results, df
 
     # ── Layer 5: Interpretation ──────────────────────────────────────────────
 

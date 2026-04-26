@@ -36,16 +36,36 @@ class OutputParser:
         "reject", "deny", "not suitable", "concerns", "not recommended",
         "decline", "unqualified", "fail", "refuse", "no",
     ]
+    
+    # Default response normalizer (maps common variations to standard format)
+    DEFAULT_NORMALIZER = {
+        "approve": "positive",
+        "approved": "positive",
+        "accept": "positive",
+        "accepted": "positive",
+        "yes": "positive",
+        "grant": "positive",
+        "granted": "positive",
+        "reject": "negative",
+        "rejected": "negative",
+        "deny": "negative",
+        "denied": "negative",
+        "decline": "negative",
+        "declined": "negative",
+        "no": "negative",
+    }
 
     def __init__(
         self,
         positive: str = "approved",
         negative: str = "rejected",
         output_type: str = "binary",
+        response_normalizer: dict[str, str] | None = None,
     ):
         self.positive = positive.lower()
         self.negative = negative.lower()
         self.output_type = output_type
+        self.response_normalizer = response_normalizer or self.DEFAULT_NORMALIZER
 
     def parse(self, response: str) -> tuple[str, float | None]:
         """
@@ -59,16 +79,50 @@ class OutputParser:
                 decision: "positive" | "negative" | "ambiguous"
                 score: Float 0-1 if extractable, else None.
         """
+        # Apply response normalizer first
+        response_normalized = self._normalize_response(response)
+        
         if self.output_type == "binary":
-            return self._parse_binary(response)
+            return self._parse_binary(response_normalized)
         elif self.output_type == "numeric_score":
-            return self._parse_numeric(response)
+            return self._parse_numeric(response_normalized)
         elif self.output_type == "free_text":
-            return self._parse_free_text(response)
+            return self._parse_free_text(response_normalized)
         elif self.output_type == "chain_of_thought":
-            return self._parse_chain_of_thought(response)
+            return self._parse_chain_of_thought(response_normalized)
         else:
             return ("ambiguous", None)
+    
+    def _normalize_response(self, response: str) -> str:
+        """
+        Normalize response using the response_normalizer mapping.
+        
+        This maps common agent vocabulary to standard positive/negative format.
+        """
+        response_lower = response.lower().strip()
+        
+        # Check if the entire response is a single word that needs normalization
+        if response_lower in self.response_normalizer:
+            normalized = self.response_normalizer[response_lower]
+            # Map to positive/negative keywords
+            if normalized == "positive":
+                return self.positive
+            elif normalized == "negative":
+                return self.negative
+        
+        # Check for normalized words within the response
+        for word, normalized in self.response_normalizer.items():
+            if word in response_lower:
+                if normalized == "positive":
+                    response = response.replace(word, self.positive)
+                    response = response.replace(word.upper(), self.positive.upper())
+                    response = response.replace(word.capitalize(), self.positive.capitalize())
+                elif normalized == "negative":
+                    response = response.replace(word, self.negative)
+                    response = response.replace(word.upper(), self.negative.upper())
+                    response = response.replace(word.capitalize(), self.negative.capitalize())
+        
+        return response
 
     def _parse_binary(self, response: str) -> tuple[str, float | None]:
         """Keyword match for explicit positive/negative outcome strings."""

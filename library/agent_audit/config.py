@@ -148,6 +148,9 @@ class AgentAuditConfig:
 
     # Backend
     backend: str = "openai"
+    
+    # Response normalizer (maps agent vocabulary to positive/negative)
+    response_normalizer: dict[str, str] | None = None
     api_key: str | None = None
     model: str = "gpt-4o"
     temperature: float = 0.0
@@ -158,6 +161,12 @@ class AgentAuditConfig:
 
     # Stress test
     enable_stress_test: bool = False
+
+    # Token optimization (internal - enabled by default)
+    enable_optimization: bool = True
+    use_prompt_caching: bool = True
+    use_two_pass_evaluation: bool = True
+    optimization_tier: str = "tier_1"  # "tier_1" | "tier_2" | "tier_3" | "adaptive"
 
     def to_decision_context(self) -> DecisionContext:
         """Convert to a DecisionContext for downstream layers."""

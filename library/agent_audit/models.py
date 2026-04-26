@@ -8,12 +8,15 @@ All dataclasses that flow through the pipeline as results:
     - Interpretation      — LLM-generated explanation of findings
     - PromptSuggestion    — Specific prompt addition for remediation
     - StressTestReport    — Results from adaptive stress testing
+    - AuditIntegrity      — Tamper-evident audit record (FairSight compliance)
+    - ModelFingerprint    — Exact model state for reproducibility
     - AgentAuditReport    — The complete audit report object
 """
 
 from __future__ import annotations
 
 import json
+import hashlib
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from typing import Any
@@ -108,6 +111,50 @@ class PromptSuggestion:
     confidence: str = "medium"
 
 
+# ── FairSight Compliance (Audit Integrity) ───────────────────────────────────
+
+@dataclass
+class AuditIntegrity:
+    """
+    Tamper-evident audit record for legal defensibility.
+    
+    Creates SHA-256 hashes of all audit components to prove
+    the audit was not altered after completion.
+    
+    Required for: EU AI Act Art. 12, NIST AI RMF, ISO/IEC 42001
+    """
+    audit_hash: str = ""           # SHA-256 of entire audit record
+    prompts_hash: str = ""         # Hash of all prompts used
+    responses_hash: str = ""       # Hash of all responses received
+    config_hash: str = ""          # Hash of audit configuration
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    
+    @staticmethod
+    def compute_hash(data: Any) -> str:
+        """Compute SHA-256 hash of data."""
+        json_str = json.dumps(data, sort_keys=True, default=str)
+        return hashlib.sha256(json_str.encode()).hexdigest()
+
+
+@dataclass
+class ModelFingerprint:
+    """
+    Exact model state for reproducibility.
+    
+    Ensures audit is tied to a specific model version.
+    gpt-4 today ≠ gpt-4 in 6 months.
+    
+    Required for: ISO/IEC 42001 reproducibility, EU AI Act Art. 9
+    """
+    model_id: str = ""             # Exact version (e.g., "gpt-4-0125-preview")
+    temperature: float = 0.0
+    max_tokens: int = 1024
+    system_prompt_hash: str = ""   # Hash of system prompt
+    sdk_version: str = ""          # e.g., "agent_audit-1.0.0"
+    backend: str = ""              # "groq" | "openai" | "anthropic"
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+
 # ── Stress Test ──────────────────────────────────────────────────────────────
 
 @dataclass
@@ -149,6 +196,14 @@ class AgentAuditReport:
         prompt_suggestions: Specific prompt additions for remediation.
         stress_test_results: Optional stress test results.
         caffe_test_suite: Full exportable CAFFE-schema test suite.
+        
+        # FairSight Compliance Fields
+        audit_integrity: Tamper-evident audit record (SHA-256 hashes).
+        model_fingerprint: Exact model state for reproducibility.
+        eeoc_air: EEOC Adverse Impact Ratios for all attributes.
+        stability: Stochastic Stability Score and classification.
+        confidence_intervals: Confidence intervals for all rate estimates.
+        bonferroni_correction: Bonferroni-corrected significance thresholds.
     """
     audit_id: str = ""
     mode: str = "standard"
@@ -166,6 +221,14 @@ class AgentAuditReport:
 
     stress_test_results: StressTestReport | None = None
     caffe_test_suite: list[dict] = field(default_factory=list)
+
+    # FairSight Compliance Fields
+    audit_integrity: AuditIntegrity | None = None
+    model_fingerprint: ModelFingerprint | None = None
+    eeoc_air: dict[str, dict] = field(default_factory=dict)
+    stability: dict[str, Any] = field(default_factory=dict)
+    confidence_intervals: dict[str, dict] = field(default_factory=dict)
+    bonferroni_correction: dict[str, Any] = field(default_factory=dict)
 
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 

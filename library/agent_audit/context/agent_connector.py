@@ -26,6 +26,17 @@ from agent_audit.config import (
     ReplayAgentConfig,
 )
 
+# Import modular agent system
+try:
+    from agent_audit.agents import (
+        SimpleLLMAgent,
+        LangGraphAgent,
+        AgentExecutor,
+    )
+    AGENTS_AVAILABLE = True
+except ImportError:
+    AGENTS_AVAILABLE = False
+
 
 class AgentConnector:
     """
@@ -33,10 +44,31 @@ class AgentConnector:
 
     Wraps different connection modes (system prompt, API, log replay)
     behind a single async .call() method.
+    
+    Supports modular agents with automatic retry logic.
     """
 
-    def __init__(self, caller: Callable[[str], Any]):
+    def __init__(
+        self,
+        caller: Callable[[str], Any],
+        agent: Any = None,
+        use_retry: bool = True,
+        max_retries: int = 3,
+    ):
         self._caller = caller
+        self.agent = agent
+        self.use_retry = use_retry
+        self.max_retries = max_retries
+        
+        # Create executor if agent provided
+        if agent and AGENTS_AVAILABLE:
+            self.executor = AgentExecutor(
+                agent=agent,
+                max_retries=max_retries,
+                retry_delays=[5.0, 10.0, 15.0],
+            )
+        else:
+            self.executor = None
 
     async def call(self, input_text: str) -> str:
         """
@@ -48,6 +80,12 @@ class AgentConnector:
         Returns:
             The agent's response text.
         """
+        # Use executor if available (with retry logic)
+        if self.executor:
+            response = await self.executor.execute(input_text)
+            return response.output
+        
+        # Fall back to direct caller
         result = self._caller(input_text)
         # Support both sync and async callables
         if hasattr(result, "__await__"):
@@ -58,6 +96,8 @@ class AgentConnector:
 def build_agent_connector(
     mode: AgentConnectionMode,
     config: PromptAgentConfig | APIAgentConfig | ReplayAgentConfig,
+    use_retry: bool = True,
+    max_retries: int = 3,
 ) -> AgentConnector:
     """
     Factory function to build the appropriate agent connector.
@@ -65,6 +105,8 @@ def build_agent_connector(
     Args:
         mode: The connection mode (prompt, api, replay).
         config: The mode-specific configuration object.
+        use_retry: Enable automatic retry on rate limits (default True).
+        max_retries: Maximum retry attempts (default 3).
 
     Returns:
         AgentConnector with a unified .call() interface.
@@ -75,12 +117,12 @@ def build_agent_connector(
     if mode == AgentConnectionMode.SYSTEM_PROMPT:
         if not isinstance(config, PromptAgentConfig):
             raise ValueError("SYSTEM_PROMPT mode requires PromptAgentConfig")
-        return _build_prompt_connector(config)
+        return _build_prompt_connector(config, use_retry, max_retries)
 
     elif mode == AgentConnectionMode.API_ENDPOINT:
         if not isinstance(config, APIAgentConfig):
             raise ValueError("API_ENDPOINT mode requires APIAgentConfig")
-        return _build_api_connector(config)
+        return _build_api_connector(config, use_retry, max_retries)
 
     elif mode == AgentConnectionMode.LOG_REPLAY:
         if not isinstance(config, ReplayAgentConfig):
@@ -93,11 +135,16 @@ def build_agent_connector(
 
 # ── System Prompt Mode ───────────────────────────────────────────────────────
 
-def _build_prompt_connector(config: PromptAgentConfig) -> AgentConnector:
+def _build_prompt_connector(
+    config: PromptAgentConfig,
+    use_retry: bool = True,
+    max_retries: int = 3,
+) -> AgentConnector:
     """
     Build a connector for system-prompt mode.
 
     Wraps an LLM backend (OpenAI, Groq, etc.) with the user's system prompt.
+    Uses modular agent system with automatic retry.
     """
     backend = _get_backend_for_model(
         model=config.model_backend,
@@ -110,7 +157,11 @@ def _build_prompt_connector(config: PromptAgentConfig) -> AgentConnector:
     async def caller(input_text: str) -> str:
         return await backend.call(input_text)
 
-    return AgentConnector(caller)
+    return AgentConnector(
+        caller=caller,
+        use_retry=use_retry,
+        max_retries=max_retries,
+    )
 
 
 def _get_backend_for_model(
@@ -177,37 +228,78 @@ def _get_backend_for_model(
 
 # ── API Endpoint Mode ────────────────────────────────────────────────────────
 
-def _build_api_connector(config: APIAgentConfig) -> AgentConnector:
+def _build_api_connector(
+    config: APIAgentConfig,
+    use_retry: bool = True,
+    max_retries: int = 3,
+) -> AgentConnector:
     """
     Build a connector for API-endpoint mode.
 
     POSTs test inputs to a user-provided API endpoint using a request
     template and extracts the response via JSONPath.
+    Includes automatic retry on rate limits.
     """
     async def caller(input_text: str) -> str:
-        # Build request body from template
-        request_body = _fill_template(config.request_template, input_text)
+        last_exception = None
+        retry_delays = [5.0, 10.0, 15.0]
+        
+        for attempt in range(max_retries + 1 if use_retry else 1):
+            try:
+                # Build request body from template
+                request_body = _fill_template(config.request_template, input_text)
 
-        # Make async HTTP POST
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                config.endpoint_url,
-                json=request_body,
-                headers=config.auth_header,
-                timeout=aiohttp.ClientTimeout(total=30),
-            ) as response:
-                if response.status != 200:
-                    raise RuntimeError(
-                        f"API endpoint returned status {response.status}: "
-                        f"{await response.text()}"
-                    )
-                response_data = await response.json()
+                # Make async HTTP POST
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(
+                        config.endpoint_url,
+                        json=request_body,
+                        headers=config.auth_header,
+                        timeout=aiohttp.ClientTimeout(total=30),
+                    ) as response:
+                        if response.status != 200:
+                            error_text = await response.text()
+                            raise RuntimeError(
+                                f"API endpoint returned status {response.status}: {error_text}"
+                            )
+                        response_data = await response.json()
 
-        # Extract decision from response using JSONPath
-        result = _extract_from_jsonpath(response_data, config.response_path)
-        return str(result)
+                # Extract decision from response using JSONPath
+                result = _extract_from_jsonpath(response_data, config.response_path)
+                return str(result)
+            
+            except Exception as e:
+                last_exception = e
+                error_msg = str(e).lower()
+                
+                # Check if it's a rate limit error
+                is_rate_limit = any(
+                    phrase in error_msg
+                    for phrase in [
+                        "rate limit",
+                        "429",
+                        "too many requests",
+                        "quota exceeded",
+                    ]
+                )
+                
+                # If not rate limit, not using retry, or last attempt, raise
+                if not is_rate_limit or not use_retry or attempt >= max_retries:
+                    raise
+                
+                # Wait before retry
+                import asyncio
+                delay = retry_delays[min(attempt, len(retry_delays) - 1)]
+                print(f"⚠️  Rate limit hit. Retrying in {delay}s (attempt {attempt + 1}/{max_retries})...")
+                await asyncio.sleep(delay)
+        
+        raise last_exception
 
-    return AgentConnector(caller)
+    return AgentConnector(
+        caller=caller,
+        use_retry=use_retry,
+        max_retries=max_retries,
+    )
 
 
 def _fill_template(template: dict, input_text: str) -> dict:

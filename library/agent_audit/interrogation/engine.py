@@ -26,6 +26,18 @@ from agent_audit.config import AgentAuditConfig, AuditMode
 from agent_audit.interrogation.parsers import OutputParser
 from agent_audit.interrogation.adaptive import should_continue_sampling
 
+# Import optimization modules (internal use)
+try:
+    from agent_audit.optimization import (
+        build_optimized_evaluation_prompt,
+        parse_json_response,
+        TwoPassEvaluator,
+        TokenBudget,
+    )
+    OPTIMIZATION_AVAILABLE = True
+except ImportError:
+    OPTIMIZATION_AVAILABLE = False
+
 
 class InterrogationEngine:
     """
@@ -52,10 +64,33 @@ class InterrogationEngine:
             positive=config.positive_outcome,
             negative=config.negative_outcome,
             output_type=config.output_type,
+            response_normalizer=config.response_normalizer,
         )
         self.cache: dict[str, dict] = {}
         self.cache_dir = cache_dir
         self._total_calls = 0
+        
+        # Token optimization (internal)
+        self.optimization_enabled = (
+            config.enable_optimization and OPTIMIZATION_AVAILABLE
+        )
+        self.use_two_pass = config.use_two_pass_evaluation and self.optimization_enabled
+        self.token_budget = None
+        self.two_pass_evaluator = None
+        
+        if self.optimization_enabled:
+            # Initialize token budget based on tier
+            tier_budgets = {
+                "tier_1": 50_000,
+                "tier_2": 80_000,
+                "tier_3": 130_000,
+                "adaptive": 130_000,
+            }
+            budget_limit = tier_budgets.get(config.optimization_tier, 50_000)
+            self.token_budget = TokenBudget(max_tokens=budget_limit)
+            
+            if self.use_two_pass:
+                self.two_pass_evaluator = TwoPassEvaluator()
 
         # Load disk cache if available
         if cache_dir and cache_dir.exists():
@@ -65,6 +100,28 @@ class InterrogationEngine:
     def total_calls(self) -> int:
         """Total API calls made during this session."""
         return self._total_calls
+    
+    def get_optimization_stats(self) -> dict[str, Any] | None:
+        """
+        Get token optimization statistics (internal).
+        
+        Returns None if optimization is disabled.
+        """
+        if not self.optimization_enabled:
+            return None
+        
+        stats = {
+            "optimization_enabled": True,
+            "two_pass_enabled": self.use_two_pass,
+        }
+        
+        if self.token_budget:
+            stats["token_budget"] = self.token_budget.to_dict()
+        
+        if self.two_pass_evaluator:
+            stats["two_pass_stats"] = self.two_pass_evaluator.get_statistics()
+        
+        return stats
 
     # ── Public API ───────────────────────────────────────────────────────
 
@@ -74,6 +131,8 @@ class InterrogationEngine:
 
         Uses adaptive sampling: starts with 1 run, continues only
         if variance is detected (or if mode requires multiple runs).
+        
+        Automatically uses token optimization if enabled (internal).
 
         Args:
             case: A CAFFE test case to execute.
@@ -89,6 +148,49 @@ class InterrogationEngine:
             case.results = [self.cache[cache_key]]
             return case
 
+        # Use two-pass evaluation if enabled (internal optimization)
+        if self.use_two_pass and self.two_pass_evaluator is not None:
+            return await self._interrogate_two_pass(case, input_text, cache_key)
+        else:
+            return await self._interrogate_standard(case, input_text, cache_key)
+
+    async def run_all(
+        self,
+        cases: list[CAFFETestCase],
+        progress_callback: Callable[[int, int, str], None] | None = None,
+    ) -> list[CAFFETestCase]:
+        """
+        Run all CAFFE test cases with progress tracking.
+
+        Args:
+            cases: List of test cases to execute.
+            progress_callback: Optional callback(completed, total, current_persona).
+
+        Returns:
+            List of completed test cases with results populated.
+        """
+        tasks = [self.interrogate(c) for c in cases]
+        completed: list[CAFFETestCase] = []
+
+        for i, coro in enumerate(asyncio.as_completed(tasks)):
+            result = await coro
+            completed.append(result)
+            if progress_callback:
+                persona_desc = (
+                    result.input_variants[0]
+                    if result.input_variants
+                    else {}
+                )
+                progress_callback(i + 1, len(cases), str(persona_desc))
+
+        return completed
+
+    # ── Private Helpers ──────────────────────────────────────────────────
+
+    async def _interrogate_standard(
+        self, case: CAFFETestCase, input_text: str, cache_key: str
+    ) -> CAFFETestCase:
+        """Standard interrogation (no optimization)."""
         max_runs = self._max_runs_for_mode()
         raw_outputs: list[str] = []
         parsed_decisions: list[str] = []
@@ -138,36 +240,66 @@ class InterrogationEngine:
 
         return case
 
-    async def run_all(
-        self,
-        cases: list[CAFFETestCase],
-        progress_callback: Callable[[int, int, str], None] | None = None,
-    ) -> list[CAFFETestCase]:
-        """
-        Run all CAFFE test cases with progress tracking.
+    async def _interrogate_two_pass(
+        self, case: CAFFETestCase, input_text: str, cache_key: str
+    ) -> CAFFETestCase:
+        """Two-pass interrogation (optimized)."""
+        # Pass 1: Single run
+        async with self.semaphore:
+            response = await self._call_agent(input_text)
+            self._total_calls += 1
 
-        Args:
-            cases: List of test cases to execute.
-            progress_callback: Optional callback(completed, total, current_persona).
+        decision, score = self.parser.parse(response)
+        
+        # Record in two-pass evaluator
+        pass1_result = self.two_pass_evaluator.record_pass1(
+            persona_id=case.test_id,
+            decision=decision,
+            score=score,
+            reason_code="standard",  # Would come from optimized parser
+            flags=[],
+        )
 
-        Returns:
-            List of completed test cases with results populated.
-        """
-        tasks = [self.interrogate(c) for c in cases]
-        completed: list[CAFFETestCase] = []
+        # Check if we need pass 2
+        if pass1_result.should_rerun:
+            # Pass 2: Two additional runs
+            additional_results = []
+            async with self.semaphore:
+                for _ in range(2):
+                    response2 = await self._call_agent(input_text)
+                    self._total_calls += 1
+                    decision2, score2 = self.parser.parse(response2)
+                    additional_results.append({
+                        "decision": decision2,
+                        "score": score2,
+                    })
+            
+            self.two_pass_evaluator.record_pass2(case.test_id, additional_results)
 
-        for i, coro in enumerate(asyncio.as_completed(tasks)):
-            result = await coro
-            completed.append(result)
-            if progress_callback:
-                persona_desc = (
-                    result.input_variants[0]
-                    if result.input_variants
-                    else {}
-                )
-                progress_callback(i + 1, len(cases), str(persona_desc))
+        # Get final aggregated result
+        final_results = self.two_pass_evaluator.get_final_results()
+        final = final_results[case.test_id]
 
-        return completed
+        # Build result dict
+        result = {
+            "raw_outputs": [response],  # Simplified for now
+            "majority_decision": final["majority_decision"],
+            "decision_variance": final["decision_variance"],
+            "mean_score": final["mean_score"],
+            "score_std": None,
+            "all_decisions": final["all_decisions"],
+            "all_scores": final["all_scores"],
+            "num_runs": final["num_runs"],
+        }
+
+        case.results = [result]
+
+        # Cache the result
+        self.cache[cache_key] = result
+        if self.cache_dir:
+            self._save_cache_entry(cache_key, result)
+
+        return case
 
     # ── Private Helpers ──────────────────────────────────────────────────
 
@@ -205,11 +337,16 @@ class InterrogationEngine:
         return result
 
     def _max_runs_for_mode(self) -> int:
-        """Maximum runs per persona based on audit mode."""
+        """
+        Maximum runs per persona based on audit mode.
+        
+        FairSight compliance requires minimum 3 runs per persona
+        for stochastic stability analysis.
+        """
         return {
-            AuditMode.QUICK: 1,
-            AuditMode.STANDARD: 3,
-            AuditMode.FULL: 5,
+            AuditMode.QUICK: 3,      # Minimum for stability
+            AuditMode.STANDARD: 3,   # Standard compliance
+            AuditMode.FULL: 5,       # Enhanced stability
         }.get(self.config.mode, 3)
 
     @staticmethod

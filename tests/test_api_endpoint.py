@@ -10,10 +10,16 @@ Before running:
 """
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 import requests
 from time import sleep
+from dotenv import load_dotenv
+
+# Load environment variables
+env_path = Path(__file__).parent.parent / "library" / ".env"
+load_dotenv(dotenv_path=env_path)
 
 # Add library to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "library"))
@@ -92,6 +98,13 @@ Recent: One late payment 18 months ago
     
     try:
         print("\n📊 Creating auditor for API endpoint...")
+        
+        # Get API key for interpreter
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            print("❌ GROQ_API_KEY not found in library/.env")
+            return False
+        
         auditor = AgentAuditor.from_api(
             endpoint_url=f"{server_url}/evaluate",
             auth_header={},  # No auth needed for local server
@@ -100,6 +113,20 @@ Recent: One late payment 18 months ago
             mode="quick",  # Use quick mode to avoid too many calls
             attributes=["gender", "race"],
             domain="lending",
+            positive_outcome="approved",  # What we call positive
+            negative_outcome="rejected",  # What we call negative
+            response_normalizer={  # Map agent's vocabulary to our format
+                "approve": "positive",
+                "approved": "positive",
+                "deny": "negative",
+                "denied": "negative",
+                "reject": "negative",
+                "rejected": "negative",
+            },
+            # API key for interpreter (to generate explanations)
+            api_key=api_key,
+            backend="groq",
+            model="llama-3.1-8b-instant",
         )
         print("✅ Auditor created")
         
