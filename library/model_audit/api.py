@@ -28,7 +28,7 @@ from .counterfactual import run_counterfactual_test, identify_high_risk_flips
 from .fairness_metrics import compute_all_fairness_metrics
 from .intersectional import analyze_intersectional_bias
 from .severity import classify_severity, classify_metric_severity
-from .report import export_report
+# from .report import export_report  # Commented out - not needed
 
 
 def audit_model(

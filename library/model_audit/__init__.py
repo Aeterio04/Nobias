@@ -33,14 +33,18 @@ from .api import (
     quick_audit,
 )
 
-from .report import (
-    export_report,
-    generate_text_summary,
-)
-
-# New modular report system
+# Report functions - optional
 try:
-    from .report_new import (
+    from .report import (
+        export_report,
+        generate_text_summary,
+    )
+except ImportError:
+    pass
+
+# New modular report system - optional
+try:
+    from .report import (
         export_json,
         export_string,
         export_pdf,

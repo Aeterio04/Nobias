@@ -22,9 +22,9 @@ from .severity import classify_overall_severity
 from .remediation import suggest_remediations
 from .models import DatasetAuditReport, DatasetFinding, ProxyFeature, Remediation, DatasetIntegrity
 
-# New advanced report system
-from .report_new import generate_report
-from .report_new.formatters import JSONFormatter, StringFormatter, PDFFormatter
+# Advanced report system
+from .report import generate_report
+from .report.formatters import JSONFormatter, StringFormatter, PDFFormatter
 
 
 __all__ = [
