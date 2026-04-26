@@ -1,4 +1,7 @@
-// ── Dashboard Page — Redesigned ──
+﻿// ── Dashboard Page — Redesigned ──
+import { api } from '../api.js';
+import { getState, setState } from '../store.js';
+
 const datasetIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18M3 12h18M3 19h18"/><path d="M9 5v14M15 5v14"/></svg>';
 const modelIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>';
 const agentIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="5" y="8" width="14" height="12" rx="2"/><path d="M10 14h.01M14 14h.01"/></svg>';
@@ -14,15 +17,15 @@ export function dashboardPage(nav) {
     <div class="dashboard-stats anim-2">
       <div class="stat-card">
         <div class="stat-label">TOTAL AUDITS</div>
-        <div class="stat-value">12</div>
+        <div class="stat-value" id="total-audits">0</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">CRITICAL FINDINGS</div>
-        <div class="stat-value" style="color:var(--c-critical)">3</div>
+        <div class="stat-value" style="color:var(--c-critical)" id="critical-count">0</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">LAST AUDIT</div>
-        <div class="metric-md">2 hours ago</div>
+        <div class="metric-md" id="last-audit">Never</div>
       </div>
     </div>
 
@@ -63,35 +66,57 @@ export function dashboardPage(nav) {
 
     <div class="section anim-4">
       <div class="section-title mb-4">Recent Audits</div>
-      <div class="table-container">
-        <table class="table">
-          <thead><tr><th>TYPE</th><th>AUDIT NAME</th><th>DATE</th><th>STATUS</th><th>ACTION</th></tr></thead>
-          <tbody>
-            <tr class="row-critical">
-              <td><div style="width:28px;height:28px;border-radius:6px;background:var(--c-accent-bg);display:flex;align-items:center;justify-content:center;color:var(--c-accent)">${'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h18M3 12h18M3 19h18"/><path d="M9 5v14M15 5v14"/></svg>'}</div></td>
-              <td style="font-weight:500;color:var(--c-text-1)">Q3_HR_Applicant_Data_v2</td>
-              <td style="color:var(--c-text-4);font-size:13px">Oct 24, 2023</td>
-              <td><span class="badge badge-critical">CRITICAL</span></td>
-              <td><a href="#/dataset-results" class="btn-ghost">View Results</a></td>
-            </tr>
-            <tr class="row-moderate">
-              <td><div style="width:28px;height:28px;border-radius:6px;background:var(--c-accent-violet-bg);display:flex;align-items:center;justify-content:center;color:var(--c-accent-violet)">${'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>'}</div></td>
-              <td style="font-weight:500;color:var(--c-text-1)">Credit_Risk_XGBoost_Prod</td>
-              <td style="color:var(--c-text-4);font-size:13px">Oct 22, 2023</td>
-              <td><span class="badge badge-moderate">MODERATE</span></td>
-              <td><a href="#/model-results" class="btn-ghost">View Results</a></td>
-            </tr>
-            <tr class="row-clear">
-              <td><div style="width:28px;height:28px;border-radius:6px;background:var(--c-accent-teal-bg);display:flex;align-items:center;justify-content:center;color:var(--c-accent-teal)">${'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8V4H8"/><rect x="5" y="8" width="14" height="12" rx="2"/></svg>'}</div></td>
-              <td style="font-weight:500;color:var(--c-text-1)">Customer_Support_Bot_v1.4</td>
-              <td style="color:var(--c-text-4);font-size:13px">Oct 18, 2023</td>
-              <td><span class="badge badge-clear">CLEAR</span></td>
-              <td><a href="#/agent-results" class="btn-ghost">View Results</a></td>
-            </tr>
-          </tbody>
-        </table>
+      <div id="history-container">
+        <div style="text-align:center;padding:40px;color:var(--c-text-4)">Loading history...</div>
       </div>
     </div>
   `;
+  
+  setTimeout(async () => {
+    try {
+      const history = await api.history.list();
+      setState({ history });
+      
+      const totalAudits = history.length;
+      const criticalCount = history.filter(h => h.severity === 'critical').length;
+      const lastAudit = history.length > 0 ? new Date(history[0].timestamp).toLocaleString() : 'Never';
+      
+      d.querySelector('#total-audits').textContent = totalAudits;
+      d.querySelector('#critical-count').textContent = criticalCount;
+      d.querySelector('#last-audit').textContent = lastAudit;
+      
+      const historyContainer = d.querySelector('#history-container');
+      if (history.length === 0) {
+        historyContainer.innerHTML = '<div style="text-align:center;padding:40px;color:var(--c-text-4)">No audits yet. Start your first audit above!</div>';
+      } else {
+        const typeIcons = { dataset: datasetIcon, model: modelIcon, agent: agentIcon };
+        const typeColors = { dataset: 'var(--c-accent)', model: 'var(--c-accent-violet)', agent: 'var(--c-accent-teal)' };
+        const typeBgs = { dataset: 'var(--c-accent-bg)', model: 'var(--c-accent-violet-bg)', agent: 'var(--c-accent-teal-bg)' };
+        
+        historyContainer.innerHTML = `
+          <div class="table-container">
+            <table class="table">
+              <thead><tr><th>TYPE</th><th>AUDIT NAME</th><th>DATE</th><th>STATUS</th><th>ACTION</th></tr></thead>
+              <tbody>
+                ${history.slice(0, 10).map(h => `
+                  <tr class="row-${h.severity}">
+                    <td><div style="width:28px;height:28px;border-radius:6px;background:${typeBgs[h.audit_type]};display:flex;align-items:center;justify-content:center;color:${typeColors[h.audit_type]}">${typeIcons[h.audit_type]}</div></td>
+                    <td style="font-weight:500;color:var(--c-text-1)">${h.name}</td>
+                    <td style="color:var(--c-text-4);font-size:13px">${new Date(h.timestamp).toLocaleString()}</td>
+                    <td><span class="badge badge-${h.severity}">${h.severity.toUpperCase()}</span></td>
+                    <td><a href="#/${h.audit_type}-results" class="btn-ghost">View Results</a></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+    } catch (err) {
+      console.error('Failed to load history:', err);
+      d.querySelector('#history-container').innerHTML = '<div style="text-align:center;padding:40px;color:var(--c-critical)">Failed to load history</div>';
+    }
+  }, 0);
+  
   return d;
 }

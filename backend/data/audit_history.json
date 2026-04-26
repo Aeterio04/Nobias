@@ -1,0 +1,114 @@
+[
+  {
+    "audit_type": "dataset",
+    "audit_id": "449021ac",
+    "name": "uploaded_dataset.csv",
+    "severity": "critical",
+    "finding_count": 6,
+    "result": {
+      "audit_id": "449021ac",
+      "dataset_name": "uploaded_dataset.csv",
+      "row_count": 50,
+      "overall_severity": "critical",
+      "finding_count": 6,
+      "findings": [
+        {
+          "check": "",
+          "severity": "critical",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        },
+        {
+          "check": "",
+          "severity": "moderate",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        },
+        {
+          "check": "",
+          "severity": "clear",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        },
+        {
+          "check": "",
+          "severity": "moderate",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        },
+        {
+          "check": "",
+          "severity": "clear",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        },
+        {
+          "check": "",
+          "severity": "moderate",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        }
+      ],
+      "proxy_features": [],
+      "label_rates": {},
+      "remediation_suggestions": []
+    },
+    "timestamp": "2026-04-27T00:14:36.772543"
+  },
+  {
+    "audit_type": "dataset",
+    "audit_id": "433cbdce",
+    "name": "uploaded_dataset.csv",
+    "severity": "critical",
+    "finding_count": 2,
+    "result": {
+      "audit_id": "433cbdce",
+      "dataset_name": "uploaded_dataset.csv",
+      "row_count": 50,
+      "overall_severity": "critical",
+      "finding_count": 2,
+      "findings": [
+        {
+          "check": "",
+          "severity": "low",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        },
+        {
+          "check": "",
+          "severity": "critical",
+          "message": "",
+          "metric": "",
+          "value": 0.0,
+          "threshold": 0.0,
+          "confidence": null
+        }
+      ],
+      "proxy_features": [],
+      "label_rates": {},
+      "remediation_suggestions": []
+    },
+    "timestamp": "2026-04-27T00:14:11.606378"
+  }
+]

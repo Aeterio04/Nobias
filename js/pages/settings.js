@@ -1,4 +1,6 @@
-// ── Settings Page — Redesigned ──
+﻿import { api } from '../api.js';
+import { getState, setState } from '../store.js';
+
 export function settingsPage(nav) {
   const d = document.createElement('div');
   d.innerHTML = `
@@ -8,55 +10,127 @@ export function settingsPage(nav) {
         <p class="page-subtitle">Configure your LLM backend, defaults, and appearance.</p>
       </div>
       <div class="settings-card anim-2">
-        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> LLM Backend</h3>
+        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M5.64 5.64l4.24 4.24M14.12 14.12l4.24 4.24M1 12h6M17 12h6M5.64 18.36l4.24-4.24M14.12 9.88l4.24-4.24"/></svg> LLM Backend</h3>
         <div class="form-group">
           <label class="form-label">LLM Provider</label>
-          <select class="input select"><option>OpenAI</option><option>Anthropic</option><option>Google</option><option>Ollama (Local)</option></select>
+          <select class="input select" id="llm-provider">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+            <option value="google">Google</option>
+            <option value="ollama">Ollama (Local)</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">API Key</label>
           <div style="display:flex;gap:12px">
             <div class="api-key-input" style="flex:1">
-              <input type="password" class="input" value="sk-••••••••••••••••••••••••••••••••" />
-              <button class="api-key-toggle">
+              <input type="password" class="input" id="api-key" placeholder="Enter your API key">
+              <button class="api-key-toggle" id="toggle-key">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
               </button>
             </div>
-            <button class="btn btn-secondary">Test Connection</button>
+            <button class="btn btn-secondary" id="test-btn">Test Connection</button>
           </div>
         </div>
-        <div class="compat-banner compat-success">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-          <span>Connected — GPT-4o available</span>
-        </div>
+        <div id="connection-status" style="display:none;margin-top:12px"></div>
       </div>
       <div class="settings-card anim-3">
-        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent-teal)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Audit Defaults</h3>
+        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent-teal)" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Audit Defaults</h3>
         <div class="form-group">
           <label class="form-label">Default Audit Mode</label>
-          <div class="segmented">
-            <button class="segmented-opt">Quick</button>
-            <button class="segmented-opt active">Standard</button>
-            <button class="segmented-opt">Full</button>
+          <div class="segmented" id="audit-mode">
+            <button class="segmented-opt" data-mode="quick">Quick</button>
+            <button class="segmented-opt active" data-mode="standard">Standard</button>
+            <button class="segmented-opt" data-mode="full">Full</button>
           </div>
         </div>
-        <hr style="border:none;border-top:1px solid var(--c-border-row);margin:16px 0">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Default Export Format</label>
-          <div class="checkbox-row"><div class="checkbox checked">✓</div><span class="checkbox-label">PDF</span></div>
-          <div class="checkbox-row"><div class="checkbox checked">✓</div><span class="checkbox-label">JSON</span></div>
-          <div class="checkbox-row"><div class="checkbox"></div><span class="checkbox-label">CAFFE JSON</span></div>
-        </div>
       </div>
-      <div class="settings-card anim-4">
-        <h3><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent-violet)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17 2H7a5 5 0 0 0-5 5v10a5 5 0 0 0 5 5h10a5 5 0 0 0 5-5V7a5 5 0 0 0-5-5z"/></svg> Appearance</h3>
-        <p style="font-size:13px;color:var(--c-text-4)">Theme and display preferences (coming soon).</p>
-      </div>
-      <div class="settings-saved anim-5">
+      <div id="save-indicator" class="settings-saved" style="display:none">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#30D158" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
         Settings saved
       </div>
     </div>
   `;
+  
+  setTimeout(async () => {
+    try {
+      const settings = await api.settings.get();
+      setState({ settings });
+      
+      d.querySelector('#llm-provider').value = settings.llm_provider || 'openai';
+      d.querySelector('#api-key').value = settings.api_key ? '••••••••••••••••' : '';
+      
+      d.querySelectorAll('#audit-mode button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === settings.default_audit_mode);
+      });
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+    }
+    
+    const showSaved = () => {
+      const indicator = d.querySelector('#save-indicator');
+      indicator.style.display = 'flex';
+      setTimeout(() => indicator.style.display = 'none', 2000);
+    };
+    
+    d.querySelector('#llm-provider').onchange = async (e) => {
+      try {
+        await api.settings.update({ llm_provider: e.target.value });
+        showSaved();
+      } catch (err) {
+        alert('Failed to save: ' + err.message);
+      }
+    };
+    
+    d.querySelector('#api-key').onblur = async (e) => {
+      if (e.target.value && !e.target.value.includes('•')) {
+        try {
+          await api.settings.update({ api_key: e.target.value });
+          showSaved();
+        } catch (err) {
+          alert('Failed to save: ' + err.message);
+        }
+      }
+    };
+    
+    d.querySelector('#toggle-key').onclick = () => {
+      const input = d.querySelector('#api-key');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    };
+    
+    d.querySelector('#test-btn').onclick = async () => {
+      const statusDiv = d.querySelector('#connection-status');
+      statusDiv.textContent = 'Testing...';
+      statusDiv.style.display = 'block';
+      statusDiv.className = '';
+      
+      try {
+        const result = await api.settings.testConnection();
+        statusDiv.className = result.connected ? 'compat-banner compat-success' : 'compat-banner';
+        statusDiv.style.background = result.connected ? 'var(--c-clear-bg)' : 'var(--c-critical-bg)';
+        statusDiv.style.borderColor = result.connected ? 'var(--c-clear-bdr)' : 'var(--c-critical-bdr)';
+        statusDiv.style.color = result.connected ? '#065F46' : 'var(--c-critical)';
+        statusDiv.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${result.connected ? 'M20 6 9 17l-5-5' : 'M18 6 6 18M6 6l12 12'}"/></svg><span>${result.message}</span>`;
+      } catch (err) {
+        statusDiv.className = 'compat-banner';
+        statusDiv.style.background = 'var(--c-critical-bg)';
+        statusDiv.textContent = 'Connection failed: ' + err.message;
+      }
+    };
+    
+    d.querySelectorAll('#audit-mode button').forEach(btn => {
+      btn.onclick = async () => {
+        d.querySelectorAll('#audit-mode button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        try {
+          await api.settings.update({ default_audit_mode: btn.dataset.mode });
+          showSaved();
+        } catch (err) {
+          alert('Failed to save: ' + err.message);
+        }
+      };
+    });
+  }, 0);
+  
   return d;
 }

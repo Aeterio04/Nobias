@@ -1,17 +1,19 @@
 {
-  "name": "nobias",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "devDependencies": {
-    "vite": "^8.0.10"
-  },
-  "dependencies": {
-    "chart.js": "^4.5.1"
-  }
+    "name":  "nobias",
+    "version":  "0.0.0",
+    "private":  true,
+    "type":  "module",
+    "scripts":  {
+                    "dev":  "vite",
+                    "build":  "vite build",
+                    "preview":  "vite preview",
+                    "backend":  "cd backend \u0026\u0026 python start.py",
+                    "dev:all":  "concurrently \"npm run backend\" \"npm run dev\""
+                },
+    "devDependencies":  {
+                            "vite":  "^8.0.10"
+                        },
+    "dependencies":  {
+                         "chart.js":  "^4.5.1"
+                     }
 }
