@@ -1,0 +1,97 @@
+// ── Dashboard Page — Redesigned ──
+const datasetIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18M3 12h18M3 19h18"/><path d="M9 5v14M15 5v14"/></svg>';
+const modelIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>';
+const agentIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="5" y="8" width="14" height="12" rx="2"/><path d="M10 14h.01M14 14h.01"/></svg>';
+
+export function dashboardPage(nav) {
+  const d = document.createElement('div');
+  d.innerHTML = `
+    <div class="anim-1">
+      <h1 class="page-title">Welcome to Nobias</h1>
+      <p class="page-subtitle">Choose an auditor to get started. Detect, measure, and fix bias in your AI systems.</p>
+    </div>
+
+    <div class="dashboard-stats anim-2">
+      <div class="stat-card">
+        <div class="stat-label">TOTAL AUDITS</div>
+        <div class="stat-value">12</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">CRITICAL FINDINGS</div>
+        <div class="stat-value" style="color:var(--c-critical)">3</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">LAST AUDIT</div>
+        <div class="metric-md">2 hours ago</div>
+      </div>
+    </div>
+
+    <div class="dashboard-modules anim-3">
+      <div class="module-card" onclick="navigate('dataset-upload')">
+        <div class="module-card-icon" style="background:var(--c-accent-bg);color:var(--c-accent)">${datasetIcon}</div>
+        <h3>Dataset Auditor</h3>
+        <p>Audit raw datasets for representation bias and statistical anomalies before training.</p>
+        <div class="module-card-tags">
+          <span class="format-badge">CSV</span><span class="format-badge">XLSX</span><span class="format-badge">Parquet</span>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="event.stopPropagation();navigate('dataset-upload')">Start Audit →</button>
+      </div>
+
+      <div class="module-card" onclick="navigate('model-upload')">
+        <div class="module-card-icon" style="background:var(--c-accent-violet-bg);color:var(--c-accent-violet)">${modelIcon}</div>
+        <h3>Model Auditor</h3>
+        <p>Audit trained ML models for fairness, disparate impact, and performance parity.</p>
+        <div class="module-card-tags">
+          <span class="format-badge">.pkl</span><span class="format-badge">.onnx</span><span class="format-badge">.joblib</span><span class="format-badge">.h5</span>
+        </div>
+        <button class="btn btn-violet btn-full" onclick="event.stopPropagation();navigate('model-upload')">Start Audit →</button>
+      </div>
+
+      <div class="module-card" onclick="navigate('agent-setup')">
+        <div style="display:flex;justify-content:space-between;align-items:start;width:100%">
+          <div class="module-card-icon" style="background:var(--c-accent-teal-bg);color:var(--c-accent-teal)">${agentIcon}</div>
+          <span class="badge badge-warn" style="font-size:11px;letter-spacing:0.05em">MOST COMPLEX</span>
+        </div>
+        <h3>Agent Auditor</h3>
+        <p>Audit LLM-powered agents for alignment, toxicity, and edge-case behaviors.</p>
+        <div class="module-card-tags">
+          <span class="format-badge">GPT-4o</span><span class="format-badge">Claude</span><span class="format-badge">Ollama</span>
+        </div>
+        <button class="btn btn-teal btn-full" onclick="event.stopPropagation();navigate('agent-setup')">Start Audit →</button>
+      </div>
+    </div>
+
+    <div class="section anim-4">
+      <div class="section-title mb-4">Recent Audits</div>
+      <div class="table-container">
+        <table class="table">
+          <thead><tr><th>TYPE</th><th>AUDIT NAME</th><th>DATE</th><th>STATUS</th><th>ACTION</th></tr></thead>
+          <tbody>
+            <tr class="row-critical">
+              <td><div style="width:28px;height:28px;border-radius:6px;background:var(--c-accent-bg);display:flex;align-items:center;justify-content:center;color:var(--c-accent)">${'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 5h18M3 12h18M3 19h18"/><path d="M9 5v14M15 5v14"/></svg>'}</div></td>
+              <td style="font-weight:500;color:var(--c-text-1)">Q3_HR_Applicant_Data_v2</td>
+              <td style="color:var(--c-text-4);font-size:13px">Oct 24, 2023</td>
+              <td><span class="badge badge-critical">CRITICAL</span></td>
+              <td><a href="#/dataset-results" class="btn-ghost">View Results</a></td>
+            </tr>
+            <tr class="row-moderate">
+              <td><div style="width:28px;height:28px;border-radius:6px;background:var(--c-accent-violet-bg);display:flex;align-items:center;justify-content:center;color:var(--c-accent-violet)">${'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>'}</div></td>
+              <td style="font-weight:500;color:var(--c-text-1)">Credit_Risk_XGBoost_Prod</td>
+              <td style="color:var(--c-text-4);font-size:13px">Oct 22, 2023</td>
+              <td><span class="badge badge-moderate">MODERATE</span></td>
+              <td><a href="#/model-results" class="btn-ghost">View Results</a></td>
+            </tr>
+            <tr class="row-clear">
+              <td><div style="width:28px;height:28px;border-radius:6px;background:var(--c-accent-teal-bg);display:flex;align-items:center;justify-content:center;color:var(--c-accent-teal)">${'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8V4H8"/><rect x="5" y="8" width="14" height="12" rx="2"/></svg>'}</div></td>
+              <td style="font-weight:500;color:var(--c-text-1)">Customer_Support_Bot_v1.4</td>
+              <td style="color:var(--c-text-4);font-size:13px">Oct 18, 2023</td>
+              <td><span class="badge badge-clear">CLEAR</span></td>
+              <td><a href="#/agent-results" class="btn-ghost">View Results</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+  return d;
+}
