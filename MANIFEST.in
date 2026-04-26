@@ -1,0 +1,35 @@
+# Include essential files
+include README.md
+include LICENSE
+include pyproject.toml
+include setup.py
+
+# Include package data
+recursive-include library/agent_audit/personas/data *.json
+
+# Exclude development and environment files
+exclude library/.env
+exclude library/**/.env
+recursive-exclude library **/.env
+recursive-exclude library **/.env.*
+recursive-exclude library **/__pycache__
+recursive-exclude library **/*.pyc
+recursive-exclude library **/*.pyo
+recursive-exclude library **/*.pyd
+recursive-exclude library **/.DS_Store
+
+# Exclude documentation files from library folder
+exclude library/**/*.md
+exclude library/agent_audit/*.md
+exclude library/model_audit/*.md
+exclude library/dataset_audit/*.md
+
+# Exclude test files
+recursive-exclude tests *
+recursive-exclude library **/test_*.py
+
+# Exclude build artifacts
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .git*
