@@ -1,4 +1,4 @@
-﻿// ── Dashboard Page — Redesigned ──
+// ── Dashboard Page — Redesigned ──
 import { api } from '../api.js';
 import { getState, setState } from '../store.js';
 
@@ -78,7 +78,7 @@ export function dashboardPage(nav) {
       setState({ history });
       
       const totalAudits = history.length;
-      const criticalCount = history.filter(h => h.severity === 'critical').length;
+      const criticalCount = history.filter(h => (h.severity || '').toUpperCase() === 'CRITICAL').length;
       const lastAudit = history.length > 0 ? new Date(history[0].timestamp).toLocaleString() : 'Never';
       
       d.querySelector('#total-audits').textContent = totalAudits;
@@ -99,11 +99,11 @@ export function dashboardPage(nav) {
               <thead><tr><th>TYPE</th><th>AUDIT NAME</th><th>DATE</th><th>STATUS</th><th>ACTION</th></tr></thead>
               <tbody>
                 ${history.slice(0, 10).map(h => `
-                  <tr class="row-${h.severity}">
-                    <td><div style="width:28px;height:28px;border-radius:6px;background:${typeBgs[h.audit_type]};display:flex;align-items:center;justify-content:center;color:${typeColors[h.audit_type]}">${typeIcons[h.audit_type]}</div></td>
-                    <td style="font-weight:500;color:var(--c-text-1)">${h.name}</td>
+                  <tr class="row-${(h.severity || 'low').toLowerCase()}">
+                    <td><div style="width:28px;height:28px;border-radius:6px;background:${typeBgs[h.audit_type]};display:flex;align-items:center;justify-content:center;color:${typeColors[h.audit_type]}">${typeIcons[h.audit_type] || ''}</div></td>
+                    <td style="font-weight:500;color:var(--c-text-1)">${h.name || 'Unknown'}</td>
                     <td style="color:var(--c-text-4);font-size:13px">${new Date(h.timestamp).toLocaleString()}</td>
-                    <td><span class="badge badge-${h.severity}">${h.severity.toUpperCase()}</span></td>
+                    <td><span class="badge badge-${(h.severity || 'low').toLowerCase()}">${(h.severity || 'UNKNOWN').toUpperCase()}</span></td>
                     <td><a href="#/${h.audit_type}-results" class="btn-ghost">View Results</a></td>
                   </tr>
                 `).join('')}

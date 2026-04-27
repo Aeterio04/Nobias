@@ -1,4 +1,4 @@
-﻿// ── Model Upload — Redesigned ──
+// ── Model Upload — Redesigned ──
 import { api } from '../api.js';
 import { getState, setState } from '../store.js';
 
@@ -132,12 +132,12 @@ export function modelUploadPage(nav) {
       if (state.modelUpload && state.testDataUpload) {
         try {
           const compat = await api.model.checkCompatibility(
-            state.modelUpload.model_path,
+            state.modelUpload.model_path || state.modelUpload.tmp_path,
             state.testDataUpload.tmp_path
           );
           setState({ compatibility: compat });
           compatBanner.style.display = 'flex';
-          d.querySelector('#compat-message').innerHTML = `Feature compatibility: <strong>${compat.matching_features}/${compat.total_features} features match</strong>`;
+          d.querySelector('#compat-message').innerHTML = `Feature compatibility: <strong>${compat.matching_features || compat.matched || '?'}/${compat.total_features || compat.total || '?'} features match</strong>`;
           configureBtn.style.display = 'block';
           configureBtn.onclick = () => nav('model-results');
         } catch (err) {

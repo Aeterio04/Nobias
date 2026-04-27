@@ -1,4 +1,4 @@
-﻿const BASE = "http://127.0.0.1:8000/api";
+const BASE = "http://127.0.0.1:8000/api";
 
 async function request(method, path, body, isFormData = false) {
   const opts = { method };
@@ -10,11 +10,19 @@ async function request(method, path, body, isFormData = false) {
       opts.body = JSON.stringify(body);
     }
   }
-  const res = await fetch(`${BASE}${path}`, opts);
+  
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, opts);
+  } catch (err) {
+    throw new Error("Cannot connect to the Nobias backend. Make sure the Python server is running: cd backend && python main.py");
+  }
+  
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Unknown error" }));
     throw new Error(err.detail || `HTTP ${res.status}`);
   }
+  
   return res.json();
 }
 
@@ -36,6 +44,9 @@ export const api = {
       fd.append("audit_mode", params.audit_mode || "standard");
       return request("POST", "/dataset/run", fd, true);
     },
+    samples: () => request("GET", "/dataset/samples"),
+    loadSample: (sampleId) => request("POST", `/dataset/load-sample/${sampleId}`),
+    export: (auditId, format = 'json') => request("GET", `/dataset/export/${auditId}?format=${format}`),
   },
   
   model: {
@@ -64,6 +75,7 @@ export const api = {
       fd.append("positive_value", String(params.positive_value));
       return request("POST", "/model/run", fd, true);
     },
+    export: (auditId, format = 'json') => request("GET", `/model/export/${auditId}?format=${format}`),
   },
   
   agent: {
@@ -87,6 +99,7 @@ export const api = {
       fd.append("audit_id_after", after_id);
       return request("POST", "/agent/compare", fd, true);
     },
+    export: (auditId, format = 'json') => request("GET", `/agent/export/${auditId}?format=${format}`),
   },
   
   history: {
