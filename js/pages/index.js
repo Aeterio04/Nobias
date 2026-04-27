@@ -1,4 +1,4 @@
-// ── Pages Index ──
+﻿// â”€â”€ Pages Index â”€â”€
 import { welcomePage } from './welcome.js';
 import { dashboardPage } from './dashboard.js';
 import { datasetUploadPage } from './dataset-upload.js';
@@ -6,6 +6,7 @@ import { datasetConfigurePage } from './dataset-configure.js';
 import { datasetRunningPage } from './dataset-running.js';
 import { datasetResultsPage } from './dataset-results.js';
 import { modelUploadPage } from './model-upload.js';
+import { modelRunningPage } from './model-running.js';
 import { modelResultsPage } from './model-results.js';
 import { agentSetupPage } from './agent-setup.js';
 import { agentRunningPage } from './agent-running.js';
@@ -22,6 +23,7 @@ export const pages = {
   datasetRunning: datasetRunningPage,
   datasetResults: datasetResultsPage,
   modelUpload: modelUploadPage,
+  modelRunning: modelRunningPage,
   modelResults: modelResultsPage,
   agentSetup: agentSetupPage,
   agentRunning: agentRunningPage,

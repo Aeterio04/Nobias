@@ -1,22 +1,25 @@
 ﻿// Simple state management
 const state = {
   datasetUpload: null,
+  datasetConfig: null,
   datasetResult: null,
   datasetLoading: false,
   datasetError: null,
-  
+
   modelUpload: null,
+  modelConfig: null,
   testDataUpload: null,
   modelResult: null,
   modelLoading: false,
   modelError: null,
   compatibility: null,
-  
+
+  agentConfig: null,
   agentResult: null,
   agentLoading: false,
   agentError: null,
   agentProgress: 0,
-  
+
   history: [],
   settings: null,
   apiConnected: false,
@@ -44,6 +47,7 @@ export function subscribe(fn) {
 export function clearDatasetState() {
   setState({
     datasetUpload: null,
+    datasetConfig: null,
     datasetResult: null,
     datasetLoading: false,
     datasetError: null,
@@ -53,6 +57,7 @@ export function clearDatasetState() {
 export function clearModelState() {
   setState({
     modelUpload: null,
+    modelConfig: null,
     testDataUpload: null,
     modelResult: null,
     modelLoading: false,
@@ -63,6 +68,7 @@ export function clearModelState() {
 
 export function clearAgentState() {
   setState({
+    agentConfig: null,
     agentResult: null,
     agentLoading: false,
     agentError: null,

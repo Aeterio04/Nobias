@@ -1,4 +1,4 @@
-const BASE = "http://127.0.0.1:8000/api";
+﻿const BASE = "http://127.0.0.1:8000/api";
 
 async function request(method, path, body, isFormData = false) {
   const opts = { method };
@@ -104,6 +104,7 @@ export const api = {
   
   history: {
     list: () => request("GET", "/history/"),
+    get: (id) => request("GET", `/history/${id}`),
     delete: (id) => request("DELETE", `/history/${id}`),
     clear: () => request("DELETE", "/history/"),
   },

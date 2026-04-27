@@ -1,4 +1,4 @@
-// ── Nobias App — Main Entry ──
+﻿// â”€â”€ Nobias App â€” Main Entry â”€â”€
 import { renderSidebar } from './sidebar.js';
 import { renderTopbar } from './topbar.js';
 import { pages } from './pages/index.js';
@@ -11,6 +11,7 @@ const routes = {
   'dataset-running':  'datasetRunning',
   'dataset-results':  'datasetResults',
   'model-upload':     'modelUpload',
+  'model-running':    'modelRunning',
   'model-results':    'modelResults',
   'agent-setup':      'agentSetup',
   'agent-running':    'agentRunning',
@@ -24,7 +25,7 @@ const pageTitles = {
   welcome:'Dashboard',dashboard:'Dashboard',
   datasetUpload:'Dataset Auditor',datasetConfigure:'Configure Your Dataset',
   datasetRunning:'Analysing Dataset',datasetResults:'Audit Results',
-  modelUpload:'Model Auditor',modelResults:'Model Auditor',
+  modelUpload:'Model Auditor',modelRunning:'Auditing Model',modelResults:'Model Auditor',
   agentSetup:'Agent Auditor',agentRunning:'Audit Console',agentResults:'Agent Auditor',
   auditComparison:'Audit Comparison',settings:'Settings',documentation:'Documentation',
 };
@@ -35,6 +36,7 @@ const pageBreadcrumbs = {
   datasetRunning:'Modules / Dataset Auditor',
   datasetResults:'Modules / Dataset Auditor / Results',
   modelUpload:'Modules / Model Auditor',
+  modelRunning:'Modules / Model Auditor',
   modelResults:'Modules / Model Auditor / Results',
   agentSetup:'Modules / Agent Auditor',
   agentRunning:'Modules / Agent Auditor',
