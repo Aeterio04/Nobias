@@ -16,12 +16,16 @@ Pipeline flow:
 
 from __future__ import annotations
 
+import logging
 import time
 from datetime import datetime
 from typing import Callable
 from uuid import uuid4
 
 import pandas as pd
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 from agent_audit.caffe import CAFFETestCase, export_test_suite
 from agent_audit.config import AgentAuditConfig, AuditMode
@@ -82,6 +86,7 @@ class PipelineOrchestrator:
 
     def __init__(self, config: AgentAuditConfig):
         self.config = config
+        logger.info(f"Initialized PipelineOrchestrator with mode={config.mode.value}")
 
     async def run_pipeline(
         self,
@@ -104,34 +109,47 @@ class PipelineOrchestrator:
         """
         start_time = time.time()
         audit_id = f"audit-{uuid4().hex[:8]}"
+        
+        logger.info(f"=== Starting Audit Pipeline (ID: {audit_id}) ===")
+        logger.info(f"Seed case: {seed_case[:100]}...")
 
         self._progress(progress_callback, "Starting audit", 0, 5)
 
         # ── Layer 2: Generate Personas ──────────────────────────────────
+        logger.info("[Layer 2] Generating persona grid")
         self._progress(progress_callback, "Generating persona grid", 1, 5)
         personas = await self._generate_personas(seed_case)
+        logger.info(f"[OK] Generated {len(personas)} personas")
 
         # ── Layer 3: Interrogate Agent ──────────────────────────────────
+        logger.info("[Layer 3] Interrogating agent (this may take time with rate limiting)")
         self._progress(progress_callback, "Interrogating agent", 2, 5)
         completed_personas = await self._interrogate_agent(connector, personas)
+        logger.info(f"[OK] Completed interrogation of {len(completed_personas)} personas")
 
         # ── Layer 4: Statistical Detection ──────────────────────────────
+        logger.info("[Layer 4] Computing statistics")
         self._progress(progress_callback, "Computing statistics", 3, 5)
         findings, persona_results, df = await self._compute_statistics(completed_personas)
+        logger.info(f"[OK] Found {len(findings)} statistical findings")
 
         # ── Layer 5: LLM Interpretation ─────────────────────────────────
+        logger.info("[Layer 5] Interpreting findings")
         self._progress(progress_callback, "Interpreting findings", 4, 5)
         interpretation, suggestions = await self._interpret_findings(
             findings, system_prompt
         )
+        logger.info(f"[OK] Generated interpretation with {len(suggestions)} suggestions")
 
         # ── Optional: Stress Test ───────────────────────────────────────
         stress_test_results = None
         if self.config.enable_stress_test and should_run_stress_test(findings):
+            logger.info("Running stress test")
             self._progress(progress_callback, "Running stress test", 5, 6)
             stress_test_results = await self._run_stress_test(connector, seed_case)
 
         # ── Build Report ────────────────────────────────────────────────
+        logger.info("Building final report")
         self._progress(progress_callback, "Building report", 5, 5)
 
         duration = time.time() - start_time

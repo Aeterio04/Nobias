@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import logging
 from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
@@ -25,6 +26,9 @@ from agent_audit.caffe import CAFFETestCase
 from agent_audit.config import AgentAuditConfig, AuditMode
 from agent_audit.interrogation.parsers import OutputParser
 from agent_audit.interrogation.adaptive import should_continue_sampling
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 # Import optimization modules (internal use)
 try:
@@ -57,6 +61,10 @@ class InterrogationEngine:
         agent_caller: Callable[[str], Any] | None = None,
         cache_dir: Path | None = None,
     ):
+        logger.info("Initializing InterrogationEngine")
+        logger.debug(f"  Mode: {config.mode.value}")
+        logger.debug(f"  Rate limit: {config.rate_limit_rps} req/s")
+        
         self.config = config
         self.agent_caller = agent_caller
         self.semaphore = asyncio.Semaphore(config.rate_limit_rps)
@@ -88,13 +96,16 @@ class InterrogationEngine:
             }
             budget_limit = tier_budgets.get(config.optimization_tier, 50_000)
             self.token_budget = TokenBudget(max_tokens=budget_limit)
+            logger.info(f"Token optimization enabled: tier={config.optimization_tier}, budget={budget_limit}")
             
             if self.use_two_pass:
                 self.two_pass_evaluator = TwoPassEvaluator()
+                logger.info("Two-pass evaluation enabled")
 
         # Load disk cache if available
         if cache_dir and cache_dir.exists():
             self._load_cache()
+            logger.info(f"Loaded {len(self.cache)} cached results")
 
     @property
     def total_calls(self) -> int:
@@ -140,16 +151,21 @@ class InterrogationEngine:
         Returns:
             The same case with results populated.
         """
+        logger.debug(f"Interrogating case: {case.test_id}")
         input_text = self._build_input(case)
         cache_key = self._hash_input(input_text)
 
         # Check cache first
         if cache_key in self.cache:
+            logger.debug(f"  Cache hit for {case.test_id}")
             case.results = [self.cache[cache_key]]
             return case
 
+        logger.debug(f"  Cache miss for {case.test_id}, executing...")
+        
         # Use two-pass evaluation if enabled (internal optimization)
         if self.use_two_pass and self.two_pass_evaluator is not None:
+            logger.debug(f"  Using two-pass evaluation")
             return await self._interrogate_two_pass(case, input_text, cache_key)
         else:
             return await self._interrogate_standard(case, input_text, cache_key)
@@ -161,6 +177,9 @@ class InterrogationEngine:
     ) -> list[CAFFETestCase]:
         """
         Run all CAFFE test cases with progress tracking.
+        
+        Uses sequential execution to prevent rate limit issues.
+        Each persona completes fully before the next one starts.
 
         Args:
             cases: List of test cases to execute.
@@ -169,12 +188,15 @@ class InterrogationEngine:
         Returns:
             List of completed test cases with results populated.
         """
-        tasks = [self.interrogate(c) for c in cases]
+        logger.info(f"[START] Starting interrogation of {len(cases)} test cases")
+        logger.info(f"   Sequential execution: one persona at a time")
         completed: list[CAFFETestCase] = []
 
-        for i, coro in enumerate(asyncio.as_completed(tasks)):
-            result = await coro
+        for i, case in enumerate(cases):
+            result = await self.interrogate(case)
             completed.append(result)
+            logger.info(f"[OK] Completed {i + 1}/{len(cases)}: {result.test_id}")
+            
             if progress_callback:
                 persona_desc = (
                     result.input_variants[0]
@@ -183,6 +205,7 @@ class InterrogationEngine:
                 )
                 progress_callback(i + 1, len(cases), str(persona_desc))
 
+        logger.info(f"[DONE] Interrogation complete: {len(completed)} cases, {self._total_calls} total API calls")
         return completed
 
     # ── Private Helpers ──────────────────────────────────────────────────
@@ -192,12 +215,14 @@ class InterrogationEngine:
     ) -> CAFFETestCase:
         """Standard interrogation (no optimization)."""
         max_runs = self._max_runs_for_mode()
+        logger.debug(f"  Standard interrogation: max_runs={max_runs}")
         raw_outputs: list[str] = []
         parsed_decisions: list[str] = []
         parsed_scores: list[float] = []
 
         async with self.semaphore:
             for run_idx in range(max_runs):
+                logger.debug(f"    Run {run_idx + 1}/{max_runs}")
                 response = await self._call_agent(input_text)
                 raw_outputs.append(response)
                 self._total_calls += 1
@@ -206,6 +231,7 @@ class InterrogationEngine:
                 parsed_decisions.append(decision)
                 if score is not None:
                     parsed_scores.append(score)
+                logger.debug(f"      Decision: {decision}, Score: {score}")
 
                 # Adaptive early-stop check
                 if not should_continue_sampling(
@@ -214,16 +240,20 @@ class InterrogationEngine:
                     temperature=self.config.temperature,
                     mode=self.config.mode.value,
                 ):
+                    logger.debug(f"    Early stop triggered after {run_idx + 1} runs")
                     break
 
         # Aggregate results
+        majority_decision = Counter(parsed_decisions).most_common(1)[0][0]
+        decision_variance = (
+            len(set(parsed_decisions)) / len(parsed_decisions)
+            if parsed_decisions else 0.0
+        )
+        
         result = {
             "raw_outputs": raw_outputs,
-            "majority_decision": Counter(parsed_decisions).most_common(1)[0][0],
-            "decision_variance": (
-                len(set(parsed_decisions)) / len(parsed_decisions)
-                if parsed_decisions else 0.0
-            ),
+            "majority_decision": majority_decision,
+            "decision_variance": decision_variance,
             "mean_score": float(np.mean(parsed_scores)) if parsed_scores else None,
             "score_std": float(np.std(parsed_scores)) if parsed_scores else None,
             "all_decisions": parsed_decisions,
@@ -231,6 +261,8 @@ class InterrogationEngine:
             "num_runs": len(raw_outputs),
         }
 
+        logger.debug(f"  Result: decision={majority_decision}, variance={decision_variance:.2f}, runs={len(raw_outputs)}")
+        
         case.results = [result]
 
         # Cache the result
@@ -326,10 +358,12 @@ class InterrogationEngine:
     async def _call_agent(self, input_text: str) -> str:
         """Call the agent (via the injected callable)."""
         if self.agent_caller is None:
+            logger.error("No agent_caller provided")
             raise RuntimeError(
                 "No agent_caller provided. Set agent_caller in the constructor "
                 "or use a backend from agent_audit.interrogation.backends."
             )
+        logger.debug(f"      Calling agent with input length: {len(input_text)} chars")
         result = self.agent_caller(input_text)
         # Support both sync and async callables
         if asyncio.iscoroutine(result):
@@ -360,7 +394,9 @@ class InterrogationEngine:
         if cache_file.exists():
             try:
                 self.cache = json.loads(cache_file.read_text())
-            except (json.JSONDecodeError, OSError):
+                logger.debug(f"Loaded cache from {cache_file}")
+            except (json.JSONDecodeError, OSError) as e:
+                logger.warning(f"Failed to load cache: {e}")
                 self.cache = {}
 
     def _save_cache_entry(self, key: str, result: dict) -> None:
@@ -370,5 +406,7 @@ class InterrogationEngine:
             cache_file = self.cache_dir / "interrogation_cache.json"
             try:
                 cache_file.write_text(json.dumps(self.cache, indent=2, default=str))
-            except OSError:
+                logger.debug(f"Saved cache entry: {key[:8]}...")
+            except OSError as e:
+                logger.warning(f"Failed to save cache: {e}")
                 pass  # Non-critical — cache is best-effort

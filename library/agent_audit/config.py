@@ -63,10 +63,15 @@ class PromptAgentConfig:
     and sends test inputs through the chosen backend.
     """
     system_prompt: str
-    model_backend: str = "gpt-4o"      # "gpt-4o" | "claude-3.5" | "ollama/mistral"
-    api_key: str | None = None         # None for local Ollama
-    temperature: float = 0.0           # lock to 0 for determinism
+    model_backend: str = "llama-3.1-8b-instant"
+    api_key: str | None = None
+    temperature: float = 0.0
     max_tokens: int = 1024
+    
+    # Smart rate limiting (automatic, enabled by default)
+    enable_smart_rate_limiting: bool = True
+    max_concurrent_requests: int = 3
+    tpm_limit: int = 5500
 
 
 @dataclass
@@ -152,12 +157,17 @@ class AgentAuditConfig:
     # Response normalizer (maps agent vocabulary to positive/negative)
     response_normalizer: dict[str, str] | None = None
     api_key: str | None = None
-    model: str = "gpt-4o"
+    model: str = "llama-3.1-8b-instant"
     temperature: float = 0.0
     max_tokens: int = 1024
 
     # Rate limiting
     rate_limit_rps: int = 10
+    
+    # Advanced rate limiting (automatic, can be disabled)
+    enable_smart_rate_limiting: bool = True  # Token-aware rate limiting
+    max_concurrent_requests: int = 3  # Limit concurrent API calls
+    tpm_limit: int = 5500  # Tokens per minute limit (for Groq/budget providers)
 
     # Stress test
     enable_stress_test: bool = False

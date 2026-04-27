@@ -11,6 +11,7 @@ Both wrap the internal PipelineOrchestrator.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Callable
 
@@ -26,6 +27,9 @@ from agent_audit.context import build_agent_connector, validate_config, validate
 from agent_audit.models import AgentAuditReport
 from agent_audit.orchestrator import PipelineOrchestrator
 from agent_audit.report import compare_audits
+
+# Configure logger
+logger = logging.getLogger(__name__)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -77,6 +81,12 @@ async def audit_agent(
         >>> print(report.overall_severity)
         >>> print(report.overall_cfr)
     """
+    logger.info("=== audit_agent() called ===")
+    logger.debug(f"  Mode: {mode}")
+    logger.debug(f"  Model: {model}")
+    logger.debug(f"  Attributes: {attributes}")
+    logger.debug(f"  Rate limit: {rate_limit_rps} req/s")
+    
     # Create auditor using from_prompt factory
     auditor = AgentAuditor.from_prompt(
         system_prompt=system_prompt,
@@ -188,6 +198,9 @@ class AgentAuditor:
             model_backend=model,
             api_key=api_key,
             temperature=0.0,
+            enable_smart_rate_limiting=config.enable_smart_rate_limiting,
+            max_concurrent_requests=config.max_concurrent_requests,
+            tpm_limit=config.tpm_limit,
         )
         auditor._system_prompt = system_prompt
         return auditor

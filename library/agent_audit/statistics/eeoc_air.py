@@ -61,6 +61,25 @@ def compute_eeoc_air(
     highest_group = max(approval_by_group, key=approval_by_group.get)
     lowest_group = min(approval_by_group, key=approval_by_group.get)
     
+    # Degenerate case: all rates are identical (perfect parity)
+    # This happens when all groups have the same approval rate
+    # AIR = 1.0 means perfect parity, not a violation
+    if max_rate == min_rate:
+        return {
+            "air": 1.0,
+            "approval_rates": {k: float(v) for k, v in approval_by_group.items()},
+            "highest_group": highest_group,
+            "lowest_group": lowest_group,
+            "highest_rate": float(max_rate),
+            "lowest_rate": float(min_rate),
+            "legal_status": "COMPLIANT",
+            "risk_level": "NONE",
+            "eeoc_compliant": True,
+            "threshold": 0.80,
+            "disparity": 0.0,
+            "note": "Perfect parity - all groups have identical approval rates",
+        }
+    
     # Compute AIR
     air = min_rate / max_rate if max_rate > 0 else 0.0
     
