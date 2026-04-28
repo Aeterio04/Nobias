@@ -15,12 +15,12 @@ All processing runs locally. Your data never leaves your machine unless you expl
 ## Installation
 
 ```bash
-pip install nobias
+pip install unbiased
 ```
 
 For full functionality including Agent Auditor:
 ```bash
-pip install nobias[all]
+pip install unbiased[all]
 ```
 
 ## Quick Start
@@ -30,7 +30,7 @@ pip install nobias[all]
 Analyzes raw training data before model development. Catches representation imbalances, label disparities, proxy features, and intersectional bias.
 
 ```python
-from nobias import audit_dataset
+from unbiased import audit_dataset
 
 report = audit_dataset(
     data='hiring_data.csv',
@@ -62,7 +62,7 @@ What it detects:
 Tests trained ML models using counterfactual testing. Creates identical inputs differing only in demographics to see if predictions change.
 
 ```python
-from nobias.model_audit import audit_model
+from unbiased.model_audit import audit_model
 
 report = audit_model(
     model='trained_model.pkl',
@@ -93,7 +93,7 @@ What it computes:
 Tests LLM-based AI agents through persona-based counterfactual testing. Detects bias in hiring assistants, loan evaluators, content moderators, etc.
 
 ```python
-from nobias.agent_audit import audit_agent
+from unbiased.agent_audit import audit_agent
 
 report = await audit_agent(
     system_prompt="You are a hiring assistant. Evaluate candidates objectively.",
@@ -123,7 +123,7 @@ What it detects:
 Test agents during development by providing the system prompt directly.
 
 ```python
-from nobias.agent_audit import AgentAuditor
+from unbiased.agent_audit import AgentAuditor
 
 auditor = AgentAuditor.from_prompt(
     system_prompt="You are a loan approval assistant...",
@@ -203,7 +203,7 @@ After optimization: 43,400 tokens, $0.28 per audit
 For complete privacy, use local LLMs via Ollama (zero cost, zero external calls):
 
 ```python
-from nobias.agent_audit import audit_agent
+from unbiased.agent_audit import audit_agent
 
 report = await audit_agent(
     system_prompt="...",
@@ -281,7 +281,7 @@ report.export('test_suite.json', format='caffe')
 ### Compare Before/After
 
 ```python
-from nobias.agent_audit import AgentAuditor
+from unbiased.agent_audit import AgentAuditor
 
 auditor = AgentAuditor.from_prompt(
     system_prompt="Original prompt...",
@@ -328,7 +328,7 @@ for intersection in report.intersectional_findings:
 ### Custom Personas for Agent Audit
 
 ```python
-from nobias.agent_audit import audit_agent_with_personas
+from unbiased.agent_audit import audit_agent_with_personas
 
 custom_personas = [
     {"name": "John Smith", "age": 35, "experience": 5},
@@ -452,7 +452,7 @@ NoBias implements methods from peer-reviewed fairness research:
 - scipy >= 1.10.0
 - scikit-learn >= 1.3.0
 
-Optional dependencies installed with `nobias[all]`:
+Optional dependencies installed with `unbiased[all]`:
 - groq, openai, anthropic, google-generativeai (LLM providers)
 - aiohttp (async HTTP)
 - reportlab, matplotlib (PDF reports)
@@ -465,10 +465,10 @@ MIT License
 ## Citation
 
 ```bibtex
-@software{nobias2025,
+@software{unbiased2025,
   title={NoBias: Comprehensive AI Fairness Testing Platform},
   author={NoBias Team},
   year={2025},
-  url={https://github.com/nobias/nobias}
+  url={https://github.com/nobias/unbiased}
 }
 ```
