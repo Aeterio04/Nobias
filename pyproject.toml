@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unbiased"
-version = "0.0.0"
+version = "0.0.2"
 description = "Comprehensive bias detection and mitigation for datasets, models, and LLM agents"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -49,6 +49,7 @@ agent = [
     "groq>=0.4.0",
     "openai>=1.0.0",
     "anthropic>=0.18.0",
+    "google-generativeai>=0.3.0",
     "aiohttp>=3.9.0",
 ]
 reports = [
@@ -71,6 +72,7 @@ all = [
     "groq>=0.4.0",
     "openai>=1.0.0",
     "anthropic>=0.18.0",
+    "google-generativeai>=0.3.0",
     "aiohttp>=3.9.0",
     "reportlab>=4.0.0",
     "matplotlib>=3.7.0",

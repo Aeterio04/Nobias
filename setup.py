@@ -13,7 +13,7 @@ if readme_path.exists():
 
 setup(
     name="unbiased",
-    version="0.0.0",
+    version="0.0.2",
     author="NoBias Team",
     author_email="contact@nobias.dev",
     description="Comprehensive bias detection and mitigation for datasets, models, and LLM agents",
@@ -55,6 +55,7 @@ setup(
             "groq>=0.4.0",
             "openai>=1.0.0",
             "anthropic>=0.18.0",
+            "google-generativeai>=0.3.0",
             "aiohttp>=3.9.0",
         ],
         "reports": [
@@ -77,6 +78,7 @@ setup(
             "groq>=0.4.0",
             "openai>=1.0.0",
             "anthropic>=0.18.0",
+            "google-generativeai>=0.3.0",
             "aiohttp>=3.9.0",
             "reportlab>=4.0.0",
             "matplotlib>=3.7.0",

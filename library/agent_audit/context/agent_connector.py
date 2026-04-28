@@ -205,6 +205,19 @@ def _get_backend_for_model(
             tpm_limit=tpm_limit,
         )
 
+    # Google Gemini models
+    elif any(x in model_lower for x in ["gemini", "bison", "palm"]):
+        from agent_audit.interrogation.backends.gemini import GeminiBackend
+        if not api_key:
+            raise ValueError("Google Gemini backend requires an API key")
+        return GeminiBackend(
+            api_key=api_key,
+            model=model,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+
     # OpenAI models
     elif model_lower.startswith("gpt"):
         from agent_audit.interrogation.backends.openai import OpenAIBackend
@@ -221,18 +234,18 @@ def _get_backend_for_model(
     # Anthropic models (future)
     elif model_lower.startswith("claude"):
         raise NotImplementedError(
-            "Anthropic backend not yet implemented. Use Groq or OpenAI for now."
+            "Anthropic backend not yet implemented. Use Groq, Gemini, or OpenAI for now."
         )
 
     # Ollama models (future)
     elif model_lower.startswith("ollama/"):
         raise NotImplementedError(
-            "Ollama backend not yet implemented. Use Groq or OpenAI for now."
+            "Ollama backend not yet implemented. Use Groq, Gemini, or OpenAI for now."
         )
 
     else:
         raise ValueError(
-            f"Unknown model: {model}. Supported: gpt-*, llama-*, mixtral-*, gemma-*"
+            f"Unknown model: {model}. Supported: gpt-*, llama-*, mixtral-*, gemini-*, gemma-*"
         )
 
 
