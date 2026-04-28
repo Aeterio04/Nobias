@@ -144,6 +144,8 @@ async def run_agent_audit(
     audit_mode: str = Form("standard"),
     attributes: str = Form('["gender","race"]'),
     domain: str = Form("hiring"),
+    positive_outcome: str = Form("hire"),
+    negative_outcome: str = Form("reject"),
 ):
     try:
         attrs = json.loads(attributes)
@@ -181,6 +183,8 @@ async def run_agent_audit(
                     model=llm_model,
                     attributes=attrs,
                     domain=domain,
+                    positive_outcome=positive_outcome,
+                    negative_outcome=negative_outcome,
                 )
             else:
                 report = audit_agent(
@@ -191,6 +195,8 @@ async def run_agent_audit(
                     model=llm_model,
                     attributes=attrs,
                     domain=domain,
+                    positive_outcome=positive_outcome,
+                    negative_outcome=negative_outcome,
                 )
 
         elif connection_mode == "api_endpoint":

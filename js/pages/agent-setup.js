@@ -71,6 +71,24 @@ export function agentSetupPage(nav) {
           </select>
         </div>
       </div>
+      <div style="padding:12px 14px;background:var(--c-bg-elevated);border-radius:8px;margin-top:4px">
+        <div style="font-size:12px;font-weight:600;color:var(--c-text-3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">
+          Decision Keywords
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--c-text-5);margin-left:6px">— must match what your agent actually outputs</span>
+        </div>
+        <div class="agent-form-row" style="margin-bottom:0">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Positive Outcome Word</label>
+            <input type="text" id="positive-outcome" class="input input-mono" value="hire" placeholder="hire, approved, yes, accept...">
+            <div style="font-size:11px;color:var(--c-text-5);margin-top:4px">The word your agent uses for a positive decision</div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Negative Outcome Word</label>
+            <input type="text" id="negative-outcome" class="input input-mono" value="reject" placeholder="reject, denied, no, decline...">
+            <div style="font-size:11px;color:var(--c-text-5);margin-top:4px">The word your agent uses for a negative decision</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- API Endpoint tab -->
@@ -269,10 +287,12 @@ export function agentSetupPage(nav) {
         if (!sp)  { showError('System prompt cannot be empty.'); return; }
         if (!sc)  { showError('Seed case cannot be empty.'); return; }
         if (!key) { showError('API key is required.'); return; }
-        params.system_prompt = sp;
-        params.seed_case     = sc;
-        params.llm_model     = d.querySelector('#llm-model').value;
-        params.api_key       = key;
+        params.system_prompt      = sp;
+        params.seed_case          = sc;
+        params.llm_model          = d.querySelector('#llm-model').value;
+        params.api_key            = key;
+        params.positive_outcome   = (d.querySelector('#positive-outcome').value || 'hire').trim().toLowerCase();
+        params.negative_outcome   = (d.querySelector('#negative-outcome').value || 'reject').trim().toLowerCase();
       } else if (activeTab === 'api') {
         const url = (d.querySelector('#endpoint-url').value || '').trim();
         if (!url) { showError('Endpoint URL is required.'); return; }
