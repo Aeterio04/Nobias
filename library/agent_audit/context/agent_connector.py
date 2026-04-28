@@ -145,6 +145,7 @@ def _build_prompt_connector(
 
     Wraps an LLM backend (OpenAI, Groq, etc.) with the user's system prompt.
     Uses modular agent system with automatic retry.
+    Smart rate limiting is enabled by default.
     """
     backend = _get_backend_for_model(
         model=config.model_backend,
@@ -152,6 +153,9 @@ def _build_prompt_connector(
         system_prompt=config.system_prompt,
         temperature=config.temperature,
         max_tokens=config.max_tokens,
+        enable_smart_rate_limiting=config.enable_smart_rate_limiting,
+        max_concurrent_requests=config.max_concurrent_requests,
+        tpm_limit=config.tpm_limit,
     )
 
     async def caller(input_text: str) -> str:
@@ -170,6 +174,9 @@ def _get_backend_for_model(
     system_prompt: str,
     temperature: float,
     max_tokens: int,
+    enable_smart_rate_limiting: bool = True,
+    max_concurrent_requests: int = 3,
+    tpm_limit: int = 5500,
 ) -> Any:
     """
     Get the appropriate backend instance for a model string.
@@ -193,6 +200,22 @@ def _get_backend_for_model(
             system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,
+            enable_smart_rate_limiting=enable_smart_rate_limiting,
+            max_concurrent_requests=max_concurrent_requests,
+            tpm_limit=tpm_limit,
+        )
+
+    # Google Gemini models
+    elif any(x in model_lower for x in ["gemini", "bison", "palm"]):
+        from agent_audit.interrogation.backends.gemini import GeminiBackend
+        if not api_key:
+            raise ValueError("Google Gemini backend requires an API key")
+        return GeminiBackend(
+            api_key=api_key,
+            model=model,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
 
     # OpenAI models
@@ -211,18 +234,18 @@ def _get_backend_for_model(
     # Anthropic models (future)
     elif model_lower.startswith("claude"):
         raise NotImplementedError(
-            "Anthropic backend not yet implemented. Use Groq or OpenAI for now."
+            "Anthropic backend not yet implemented. Use Groq, Gemini, or OpenAI for now."
         )
 
     # Ollama models (future)
     elif model_lower.startswith("ollama/"):
         raise NotImplementedError(
-            "Ollama backend not yet implemented. Use Groq or OpenAI for now."
+            "Ollama backend not yet implemented. Use Groq, Gemini, or OpenAI for now."
         )
 
     else:
         raise ValueError(
-            f"Unknown model: {model}. Supported: gpt-*, llama-*, mixtral-*, gemma-*"
+            f"Unknown model: {model}. Supported: gpt-*, llama-*, mixtral-*, gemini-*, gemma-*"
         )
 
 

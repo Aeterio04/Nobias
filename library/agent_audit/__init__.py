@@ -80,6 +80,9 @@ from agent_audit.models import (
 # ── Report Utilities ─────────────────────────────────────────────────────────
 from agent_audit.report import compare_audits, build_report_summary
 
+# ── Logging Configuration ────────────────────────────────────────────────────
+from agent_audit.logging_config import setup_logging, get_logger, disable_logging, enable_debug_mode
+
 # ── Level 3 API (Expert Mode) ────────────────────────────────────────────────
 from agent_audit.context import build_agent_connector, validate_config, validate_seed_case
 from agent_audit.personas.pairwise import generate_pairwise_grid
@@ -112,6 +115,12 @@ __all__ = [
     # ── Report Utilities ─────────────────────────────────────────────────────
     "compare_audits",
     "build_report_summary",
+    
+    # ── Logging Configuration ────────────────────────────────────────────────
+    "setup_logging",
+    "get_logger",
+    "disable_logging",
+    "enable_debug_mode",
     
     # ── Level 3 API (Expert Mode) ────────────────────────────────────────────
     "build_agent_connector",

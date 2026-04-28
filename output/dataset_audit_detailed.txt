@@ -1,0 +1,254 @@
+================================================================================
+DATASET FAIRNESS AUDIT REPORT
+================================================================================
+
+[HEALTH OVERVIEW]
+--------------------------------------------------------------------------------
+Overall Severity: CRITICAL
+Health Score: 45.5/100
+Total Findings: 20
+  - Critical: 5
+  - Moderate: 11
+  - Low: 4
+Proxy Features Detected: 10
+
+[DATASET CONFIGURATION]
+--------------------------------------------------------------------------------
+Dataset Name: test_data_biased.csv
+Rows: 600
+Columns: 13
+Audit Timestamp: 2026-04-26T14:20:27.736675
+
+[DEMOGRAPHIC REPRESENTATION]
+--------------------------------------------------------------------------------
+
+gender:
+  Male: 349 samples (58.2%)
+  Female: 251 samples (41.8%)
+
+race:
+  White: 333 samples (55.5%)
+  Asian: 105 samples (17.5%)
+  Black: 88 samples (14.7%)
+  Hispanic: 74 samples (12.3%)
+
+Label Rates by Group:
+
+gender:
+  Female: 10.76% positive rate
+  Male: 35.82% positive rate
+
+race:
+  Asian: 14.29% positive rate
+  White: 33.63% positive rate
+  Hispanic: 17.57% positive rate
+  Black: 13.64% positive rate
+
+[PROXY FEATURES]
+--------------------------------------------------------------------------------
+Total Detected: 10
+  - High Risk: 6
+  - Medium Risk: 4
+  - Low Risk: 0
+
+Top Proxy Features:
+
+1. 'gender_Female' -> 'gender'
+   Risk Level: HIGH
+   Correlation: 1.0000
+   NMI: 1.0000
+   Method: point_biserial
+
+2. 'gender_Male' -> 'gender'
+   Risk Level: HIGH
+   Correlation: 1.0000
+   NMI: 1.0000
+   Method: point_biserial
+
+3. 'interview_score' -> 'gender'
+   Risk Level: MEDIUM
+   Correlation: 0.0430
+   NMI: 0.3260
+   Method: point_biserial
+
+4. 'years_experience' -> 'gender'
+   Risk Level: MEDIUM
+   Correlation: 0.0210
+   NMI: 0.3260
+   Method: point_biserial
+
+5. 'years_experience' -> 'race'
+   Risk Level: MEDIUM
+   Correlation: 0.0010
+   NMI: 0.4280
+   Method: eta_squared
+
+6. 'race_Asian' -> 'race'
+   Risk Level: HIGH
+   Correlation: nan
+   NMI: 0.6290
+   Method: eta_squared
+
+7. 'race_Black' -> 'race'
+   Risk Level: HIGH
+   Correlation: nan
+   NMI: 0.5970
+   Method: eta_squared
+
+8. 'race_Hispanic' -> 'race'
+   Risk Level: HIGH
+   Correlation: nan
+   NMI: 0.5650
+   Method: eta_squared
+
+9. 'race_White' -> 'race'
+   Risk Level: HIGH
+   Correlation: nan
+   NMI: 0.7660
+   Method: eta_squared
+
+10. 'interview_score' -> 'race'
+   Risk Level: MEDIUM
+   Correlation: 0.0050
+   NMI: 0.4280
+   Method: eta_squared
+
+[BIAS FINDINGS]
+--------------------------------------------------------------------------------
+Total Findings: 20
+
+Summary: Dataset shows 5 critical bias issue(s) requiring immediate attention.
+
+[CRITICAL FINDINGS]
+
+1. [label_bias] Severe disparate impact in 'gender': group 'Female' has 0.30x positive rate vs 'Male' (p=0.0000)
+   Metric: DIR = 0.3004
+   Threshold: 0.6000
+   Confidence: 80.00%
+
+2. [label_bias] Severe statistical parity violation in 'gender': group 'Female' has -0.251 lower positive rate (p=0.0000)
+   Metric: SPD = -0.2506
+   Threshold: -0.2000
+   Confidence: 80.00%
+
+3. [label_bias] Severe disparate impact in 'race': group 'Asian' has 0.42x positive rate vs 'White' (p=0.0061)
+   Metric: DIR = 0.4249
+   Threshold: 0.6000
+   Confidence: 80.00%
+
+4. [label_bias] Severe disparate impact in 'race': group 'Black' has 0.41x positive rate vs 'White' (p=0.0094)
+   Metric: DIR = 0.4056
+   Threshold: 0.6000
+   Confidence: 60.00%
+
+5. [intersectional_disparity] Intersectional disparity: (gender=Female, race=Black) has 94.3% lower positive rate than (gender=Male, race=White)
+   Metric: DIR = 0.0574
+   Threshold: 0.9000
+   Confidence: 60.00%
+
+[MODERATE FINDINGS]
+
+1. [representation] Group 'Asian' in 'race' is under-represented (105 samples, 17.5% of dataset)
+   Metric: percentage = 17.5000
+   Threshold: 35.0000
+
+2. [representation] Group 'Black' in 'race' is under-represented (88 samples, 14.7% of dataset)
+   Metric: percentage = 14.6667
+   Threshold: 35.0000
+
+3. [representation] Group 'Hispanic' in 'race' is under-represented (74 samples, 12.3% of dataset)
+   Metric: percentage = 12.3333
+   Threshold: 35.0000
+
+4. [intersectional_representation] Intersectional group (gender=Female, race=Asian) is under-represented (39 samples, 6.5%)
+   Metric: percentage = 6.5000
+   Threshold: 10.0000
+
+5. [intersectional_representation] Intersectional group (gender=Female, race=Black) is under-represented (36 samples, 6.0%)
+   Metric: percentage = 6.0000
+   Threshold: 10.0000
+
+6. [intersectional_representation] Intersectional group (gender=Female, race=Hispanic) is under-represented (31 samples, 5.2%)
+   Metric: percentage = 5.1667
+   Threshold: 10.0000
+
+7. [intersectional_representation] Intersectional group (gender=Male, race=Black) is under-represented (52 samples, 8.7%)
+   Metric: percentage = 8.6667
+   Threshold: 10.0000
+
+8. [intersectional_representation] Intersectional group (gender=Male, race=Hispanic) is under-represented (43 samples, 7.2%)
+   Metric: percentage = 7.1667
+   Threshold: 10.0000
+
+9. [label_bias] Statistical parity violation in 'race': group 'Asian' has -0.193 lower positive rate (p=0.0061)
+   Metric: SPD = -0.1934
+   Threshold: -0.1000
+
+10. [label_bias] Statistical parity violation in 'race': group 'Black' has -0.200 lower positive rate (p=0.0094)
+   Metric: SPD = -0.1999
+   Threshold: -0.1000
+
+11. [superadditive_bias] Superadditive bias detected: intersectional disparity (0.456) exceeds individual attribute disparities
+   Metric: disparity_ratio = 1.8207
+   Threshold: 1.2000
+
+[LOW SEVERITY FINDINGS] (4 findings)
+
+[REMEDIATION STRATEGIES]
+--------------------------------------------------------------------------------
+Total Strategies: 3
+
+Recommended Actions (Priority Order):
+
+1. reweighting
+   Description: Adjust sample weights to equalize positive label rates across groups
+   Expected Impact: HIGH
+   Complexity: LOW
+   Estimated DIR After: 0.9500
+   Estimated SPD After: -0.0200
+
+2. disparate_impact_remover
+   Description: Transform feature distributions to reduce group-dependent variation (repair level: 0.8)
+   Expected Impact: MEDIUM
+   Complexity: MEDIUM
+   Estimated DIR After: 0.8800
+   Estimated SPD After: -0.0500
+
+3. smote
+   Description: Oversample under-represented intersectional groups using SMOTE
+   Expected Impact: MEDIUM
+   Complexity: MEDIUM
+   Estimated DIR After: 0.8700
+   Estimated SPD After: -0.0600
+
+[LEGAL COMPLIANCE]
+--------------------------------------------------------------------------------
+Overall Status: FAIL
+
+EEOC 80% Rule (4/5ths): FAIL
+Violations: 4
+
+Violation Details:
+  - gender / Female: 30.04% ratio
+  - race / Asian: 42.49% ratio
+  - race / Hispanic: 52.25% ratio
+  - race / Black: 40.56% ratio
+
+Compliance Recommendations:
+1. Address EEOC 80% rule violations through resampling or reweighting to ensure selection rates across groups meet the 4/5ths threshold.
+2. Improve demographic representation balance through targeted data collection or synthetic data augmentation for underrepresented groups.
+
+[STATISTICAL VALIDITY]
+--------------------------------------------------------------------------------
+Average Confidence: 67.00%
+Sample Size: 600
+Sample Adequacy: MARGINAL
+Data Completeness: 100.00%
+Statistical Power: HIGH
+
+Limitations:
+1. No major limitations identified in the audit methodology.
+
+================================================================================
+END OF REPORT
+================================================================================

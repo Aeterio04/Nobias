@@ -111,6 +111,15 @@ class Interpreter:
                 temperature=0.0,
                 max_tokens=2048,
             )
+        elif any(x in model_lower for x in ["gemini", "bison", "palm"]):
+            # Use Google Gemini
+            from agent_audit.interrogation.backends.gemini import GeminiBackend
+            backend = GeminiBackend(
+                api_key=self.api_key,
+                model=self.model,
+                temperature=0.0,
+                max_tokens=2048,
+            )
         elif model_lower.startswith("claude"):
             # Use Anthropic
             from agent_audit.interrogation.backends.anthropic import AnthropicBackend

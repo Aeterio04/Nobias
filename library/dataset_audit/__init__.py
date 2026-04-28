@@ -7,6 +7,9 @@ Detects statistical biases in tabular datasets before model training.
 from typing import Union, List, Any
 from pathlib import Path
 import pandas as pd
+import time
+import uuid
+from datetime import datetime
 
 from .ingestion import load_and_validate, suggest_protected_columns
 from .representation import analyze_representation, analyze_intersectional_representation
@@ -17,8 +20,11 @@ from .intersectional import analyze_intersectional_disparities
 from .divergence import analyze_kl_divergence
 from .severity import classify_overall_severity
 from .remediation import suggest_remediations
-from .report import DatasetAuditReport
-from .models import DatasetFinding, ProxyFeature, Remediation
+from .models import DatasetAuditReport, DatasetFinding, ProxyFeature, Remediation, DatasetIntegrity
+
+# Advanced report system
+from .report import generate_report
+from .report.formatters import JSONFormatter, StringFormatter, PDFFormatter
 
 
 __all__ = [
@@ -27,8 +33,55 @@ __all__ = [
     'DatasetAuditReport',
     'DatasetFinding',
     'ProxyFeature',
-    'Remediation'
+    'Remediation',
+    # New report functions
+    'generate_report',
+    'export_dataset_report_json',
+    'export_dataset_report_string',
+    'export_dataset_report_pdf',
 ]
+
+
+# Convenience functions for new report system
+def export_dataset_report_json(audit_report: DatasetAuditReport, filepath: str, mode: str = 'comprehensive') -> None:
+    """
+    Export dataset audit report as JSON.
+    
+    Args:
+        audit_report: DatasetAuditReport object
+        filepath: Output file path
+        mode: 'comprehensive' or 'basic'
+    """
+    report_data = generate_report(audit_report)
+    JSONFormatter.save(report_data, filepath, mode)
+
+
+def export_dataset_report_string(audit_report: DatasetAuditReport, filepath: str, mode: str = 'detailed') -> None:
+    """
+    Export dataset audit report as text.
+    
+    Args:
+        audit_report: DatasetAuditReport object
+        filepath: Output file path
+        mode: 'detailed' or 'summary'
+    """
+    report_data = generate_report(audit_report)
+    StringFormatter.save(report_data, filepath, mode)
+
+
+def export_dataset_report_pdf(audit_report: DatasetAuditReport, filepath: str) -> None:
+    """
+    Export dataset audit report as PDF.
+    
+    Args:
+        audit_report: DatasetAuditReport object
+        filepath: Output file path
+    
+    Raises:
+        ImportError: If reportlab is not installed
+    """
+    report_data = generate_report(audit_report)
+    PDFFormatter.save(report_data, filepath)
 
 
 def audit_dataset(
@@ -63,8 +116,15 @@ def audit_dataset(
         >>> print(report.to_text())
         >>> report.export('audit.json')
     """
+    # Start timing
+    start_time = time.time()
+    audit_id = f"dataset_audit_{uuid.uuid4().hex[:8]}"
+    
     logs = []
     all_findings = []
+    
+    logs.append(f"Starting dataset audit: {audit_id}")
+    logs.append(f"Timestamp: {datetime.utcnow().isoformat()}")
     
     # Phase 1: Ingestion
     logs.append("Phase 1: Data ingestion and validation")
@@ -122,11 +182,39 @@ def audit_dataset(
     remediation_suggestions = suggest_remediations(df, protected_attributes, label_rates)
     logs.append(f"Generated {len(remediation_suggestions)} remediation strategies")
     
+    # Compute audit integrity
+    duration_seconds = time.time() - start_time
+    logs.append(f"Audit completed in {duration_seconds:.2f}s")
+    
+    audit_integrity = DatasetIntegrity(
+        data_hash=DatasetIntegrity.compute_hash({
+            'row_count': metadata['row_count'],
+            'column_count': metadata['column_count'],
+            'protected_attributes': protected_attributes,
+        }),
+        findings_hash=DatasetIntegrity.compute_hash([f.__dict__ for f in all_findings]),
+        config_hash=DatasetIntegrity.compute_hash({
+            'protected_attributes': protected_attributes,
+            'target_column': target_column,
+            'positive_value': str(positive_value),
+        }),
+    )
+    audit_integrity.audit_hash = DatasetIntegrity.compute_hash({
+        'audit_id': audit_id,
+        'data_hash': audit_integrity.data_hash,
+        'findings_hash': audit_integrity.findings_hash,
+        'config_hash': audit_integrity.config_hash,
+    })
+    
     # Build report
     report = DatasetAuditReport(
+        audit_id=audit_id,
         dataset_name=metadata['dataset_name'],
         row_count=metadata['row_count'],
         column_count=metadata['column_count'],
+        protected_attributes=protected_attributes,
+        target_column=target_column,
+        positive_value=positive_value,
         overall_severity=overall_severity,
         findings=all_findings,
         representation=representation,
@@ -136,6 +224,9 @@ def audit_dataset(
         intersectional_disparities=intersectional_disparities,
         kl_divergences=kl_divergences,
         remediation_suggestions=remediation_suggestions,
+        audit_integrity=audit_integrity,
+        duration_seconds=duration_seconds,
+        timestamp=datetime.utcnow().isoformat(),
         logs=logs
     )
     
