@@ -21,6 +21,7 @@ export function settingsPage(nav) {
           <option value="openai">OpenAI</option>
           <option value="anthropic">Anthropic</option>
           <option value="groq">Groq</option>
+          <option value="gemini">Google Gemini</option>
           <option value="ollama">Ollama (Local)</option>
         </select>
       </div>
@@ -31,6 +32,9 @@ export function settingsPage(nav) {
           <option value="gpt-4-turbo">GPT-4 Turbo</option>
           <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
           <option value="llama-3.1-70b-versatile">Llama 3.1 70B (Groq)</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (Google)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (Google)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (Google)</option>
         </select>
       </div>
       <div class="form-group">
@@ -61,7 +65,7 @@ export function settingsPage(nav) {
       <div class="form-group">
         <label class="form-label">Default Audit Mode</label>
         <div class="segmented" id="audit-mode-seg">
-          <button class="segmented-opt" data-mode="quick">⚡ Quick</button>
+          <button class="segmented-opt" data-mode="quick">? Quick</button>
           <button class="segmented-opt active" data-mode="standard">Standard</button>
           <button class="segmented-opt" data-mode="full">Full</button>
         </div>
@@ -114,12 +118,12 @@ export function settingsPage(nav) {
       ollamaGroup.style.display = providerSel.value === 'ollama' ? 'block' : 'none';
     }
 
-    // ── Load settings ─────────────────────────────────────────────────────
+    // -- Load settings -----------------------------------------------------
     try {
       const s = await api.settings.get();
       providerSel.value  = s.llm_provider || 'openai';
       modelSel.value     = s.llm_model    || 'gpt-4o';
-      apiKeyInput.value  = s.api_key      ? '••••••••••••••••' : '';
+      apiKeyInput.value  = s.api_key      ? '����������������' : '';
       ollamaInput.value  = s.ollama_url   || 'http://localhost:11434';
       toggleOllama();
 
@@ -131,7 +135,7 @@ export function settingsPage(nav) {
       console.warn('Could not load settings:', err.message);
     }
 
-    // ── Provider change ───────────────────────────────────────────────────
+    // -- Provider change ---------------------------------------------------
     providerSel.addEventListener('change', () => {
       toggleOllama();
       save({ llm_provider: providerSel.value });
@@ -139,14 +143,14 @@ export function settingsPage(nav) {
 
     modelSel.addEventListener('change', () => save({ llm_model: modelSel.value }));
 
-    // ── API key ───────────────────────────────────────────────────────────
+    // -- API key -----------------------------------------------------------
     d.querySelector('#toggle-key').addEventListener('click', () => {
       apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
     });
 
     apiKeyInput.addEventListener('blur', () => {
       const val = apiKeyInput.value.trim();
-      if (val && !val.includes('•')) save({ api_key: val });
+      if (val && !val.includes('�')) save({ api_key: val });
     });
 
     ollamaInput.addEventListener('blur', () => {
@@ -154,7 +158,7 @@ export function settingsPage(nav) {
       if (val) save({ ollama_url: val });
     });
 
-    // ── Audit mode ────────────────────────────────────────────────────────
+    // -- Audit mode --------------------------------------------------------
     d.querySelectorAll('#audit-mode-seg button').forEach(btn => {
       btn.addEventListener('click', () => {
         d.querySelectorAll('#audit-mode-seg button').forEach(b => b.classList.remove('active'));
@@ -163,7 +167,7 @@ export function settingsPage(nav) {
       });
     });
 
-    // ── Test connection ───────────────────────────────────────────────────
+    // -- Test connection ---------------------------------------------------
     d.querySelector('#test-btn').addEventListener('click', async () => {
       const btn = d.querySelector('#test-btn');
       btn.textContent = 'Testing...';
@@ -181,20 +185,20 @@ export function settingsPage(nav) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="${ok ? 'M20 6 9 17l-5-5' : 'M18 6 6 18M6 6l12 12'}"/>
           </svg>
-          <span>${ok ? '✅ ' : '❌ '}${result.message || (ok ? 'Connected' : 'Connection failed')}</span>`;
+          <span>${ok ? '? ' : '? '}${result.message || (ok ? 'Connected' : 'Connection failed')}</span>`;
       } catch (err) {
         connStatus.style.display = 'flex';
         connStatus.style.background = 'var(--c-critical-bg)';
         connStatus.style.border     = '1px solid var(--c-critical-bdr)';
         connStatus.style.color      = 'var(--c-critical)';
-        connStatus.innerHTML = `<span>❌ Connection failed: ${err.message}</span>`;
+        connStatus.innerHTML = `<span>? Connection failed: ${err.message}</span>`;
       } finally {
         btn.textContent = 'Test Connection';
         btn.disabled = false;
       }
     });
 
-    // ── Clear history ─────────────────────────────────────────────────────
+    // -- Clear history -----------------------------------------------------
     d.querySelector('#clear-history-btn').addEventListener('click', async () => {
       const confirmed = window.confirm(
         'Delete ALL audit history?\n\nThis will permanently remove all saved audits and cannot be undone.'

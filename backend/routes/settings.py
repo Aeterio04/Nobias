@@ -50,22 +50,55 @@ def update_settings(update: SettingsUpdate):
 @router.post("/test-connection")
 async def test_connection():
     settings = _load_settings()
+    provider = settings.get("llm_provider", "openai")
+    api_key  = settings.get("api_key", "")
+    model    = settings.get("llm_model", "")
+
     try:
-        if settings["llm_provider"] == "openai":
+        if provider == "openai":
             import openai
-            client = openai.OpenAI(api_key=settings["api_key"])
-            models = client.models.list()
-            return {"connected": True, "message": f"Connected — {settings['llm_model']} available"}
-        elif settings["llm_provider"] == "anthropic":
+            client = openai.OpenAI(api_key=api_key)
+            client.models.list()
+            return {"connected": True, "message": f"Connected — {model} available"}
+
+        elif provider == "anthropic":
             import anthropic
-            client = anthropic.Anthropic(api_key=settings["api_key"])
-            return {"connected": True, "message": "Connected — Claude available"}
-        elif settings["llm_provider"] == "ollama":
+            client = anthropic.Anthropic(api_key=api_key)
+            client.messages.create(
+                model=model or "claude-3-5-sonnet-20241022",
+                max_tokens=1,
+                messages=[{"role": "user", "content": "hi"}],
+            )
+            return {"connected": True, "message": f"Connected — {model} available"}
+
+        elif provider == "groq":
             import httpx
-            r = httpx.get(f"{settings['ollama_url']}/api/tags")
-            models = [m['name'] for m in r.json().get('models', [])]
-            return {"connected": True, "message": f"Connected — {len(models)} models available"}
+            r = httpx.get(
+                "https://api.groq.com/openai/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=10,
+            )
+            if r.status_code == 200:
+                return {"connected": True, "message": "Connected — Groq API reachable"}
+            else:
+                return {"connected": False, "message": f"Groq returned HTTP {r.status_code}"}
+
+        elif provider == "gemini":
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            models_list = list(genai.list_models())
+            gemini_models = [m.name for m in models_list if "generateContent" in (m.supported_generation_methods or [])]
+            return {"connected": True, "message": f"Connected — {len(gemini_models)} Gemini model(s) available"}
+
+        elif provider == "ollama":
+            import httpx
+            ollama_url = settings.get("ollama_url", "http://localhost:11434")
+            r = httpx.get(f"{ollama_url}/api/tags", timeout=5)
+            models_list = [m['name'] for m in r.json().get('models', [])]
+            return {"connected": True, "message": f"Connected — {len(models_list)} models available"}
+
         else:
-            return {"connected": False, "message": "Unknown provider"}
+            return {"connected": False, "message": f"Unknown provider: {provider}"}
+
     except Exception as e:
         return {"connected": False, "message": str(e)}

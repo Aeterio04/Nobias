@@ -174,6 +174,14 @@ async def run_agent_audit(
             if not seed_case or not seed_case.strip():
                 raise HTTPException(400, "Seed case cannot be empty.")
 
+            # Configure Gemini SDK if the selected model is a Gemini model
+            if llm_model.startswith("gemini"):
+                try:
+                    import google.generativeai as genai
+                    genai.configure(api_key=api_key)
+                except ImportError:
+                    raise HTTPException(503, "google-generativeai not installed. Run: pip install google-generativeai")
+
             if asyncio.iscoroutinefunction(audit_agent):
                 report = await audit_agent(
                     system_prompt=system_prompt,

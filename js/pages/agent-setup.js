@@ -34,7 +34,7 @@ export function agentSetupPage(nav) {
       <div class="form-group">
         <label class="form-label">
           Seed Case <span style="color:var(--c-critical)">*</span>
-          <span style="font-size:11px;color:var(--c-text-5);font-weight:400;margin-left:6px">Template input the agent will evaluate — demographic attributes will be swapped</span>
+          <span style="font-size:11px;color:var(--c-text-5);font-weight:400;margin-left:6px">Template input the agent will evaluate � demographic attributes will be swapped</span>
         </label>
         <textarea id="seed-case" class="input input-mono" rows="3"
           placeholder="Evaluate: Name: Jordan Smith, Age: 29, Education: BS Computer Science, Experience: 5 years software engineering">Evaluate: Name: Jordan Smith, Age: 29, Education: BS Computer Science, Experience: 5 years software engineering, Skills: Python, AWS, React</textarea>
@@ -48,6 +48,9 @@ export function agentSetupPage(nav) {
             <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet (Anthropic)</option>
             <option value="llama-3.1-70b-versatile">Llama 3.1 70B (Groq)</option>
             <option value="llama-3.1-8b-instant">Llama 3.1 8B (Groq)</option>
+            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Google)</option>
+            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Google)</option>
+            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Google)</option>
           </select>
         </div>
         <div class="form-group">
@@ -74,7 +77,7 @@ export function agentSetupPage(nav) {
       <div style="padding:12px 14px;background:var(--c-bg-elevated);border-radius:8px;margin-top:4px">
         <div style="font-size:12px;font-weight:600;color:var(--c-text-3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em">
           Decision Keywords
-          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--c-text-5);margin-left:6px">— must match what your agent actually outputs</span>
+          <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--c-text-5);margin-left:6px">� must match what your agent actually outputs</span>
         </div>
         <div class="agent-form-row" style="margin-bottom:0">
           <div class="form-group" style="margin-bottom:0">
@@ -170,7 +173,7 @@ export function agentSetupPage(nav) {
     <!-- Run button -->
     <div class="anim-4 mt-6" style="display:flex;justify-content:flex-end">
       <button id="run-btn" class="btn btn-teal" disabled style="opacity:0.4;cursor:not-allowed;min-width:180px">
-        Start Audit →
+        Start Audit ?
       </button>
     </div>
   `;
@@ -187,7 +190,7 @@ export function agentSetupPage(nav) {
     const promptTA    = d.querySelector('#system-prompt');
     const seedTA      = d.querySelector('#seed-case');
 
-    // ── Tab switching ─────────────────────────────────────────────────────
+    // -- Tab switching -----------------------------------------------------
     d.querySelectorAll('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
         d.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -200,7 +203,7 @@ export function agentSetupPage(nav) {
       });
     });
 
-    // ── Run button enable logic ───────────────────────────────────────────
+    // -- Run button enable logic -------------------------------------------
     function updateRunBtn() {
       let ready = false;
       if (activeTab === 'prompt') {
@@ -219,14 +222,14 @@ export function agentSetupPage(nav) {
     apiKeyInput.addEventListener('input', updateRunBtn);
     d.querySelector('#endpoint-url')?.addEventListener('input', updateRunBtn);
 
-    // ── API key toggle ────────────────────────────────────────────────────
+    // -- API key toggle ----------------------------------------------------
     toggleKey.addEventListener('click', () => {
       keyVisible = !keyVisible;
       apiKeyInput.type = keyVisible ? 'text' : 'password';
       toggleKey.innerHTML = keyVisible ? eyeOffIcon : eyeIcon;
     });
 
-    // ── Log file upload ───────────────────────────────────────────────────
+    // -- Log file upload ---------------------------------------------------
     const logDropzone = d.querySelector('#log-dropzone');
     const logInput    = d.querySelector('#log-file-input');
 
@@ -246,14 +249,14 @@ export function agentSetupPage(nav) {
         d.querySelector('#log-idle').style.display = 'none';
         d.querySelector('#log-loaded').style.display = 'block';
         d.querySelector('#log-info').textContent = file.name;
-        d.querySelector('#log-meta').textContent = `${result.line_count} entries · Fields: ${result.detected_fields.join(', ')}`;
+        d.querySelector('#log-meta').textContent = `${result.line_count} entries � Fields: ${result.detected_fields.join(', ')}`;
         updateRunBtn();
       } catch (err) {
         showError(`Log upload failed: ${err.message}`);
       }
     }
 
-    // ── Error helpers ─────────────────────────────────────────────────────
+    // -- Error helpers -----------------------------------------------------
     function showError(msg) {
       errorBanner.textContent = msg;
       errorBanner.style.display = 'block';
@@ -262,7 +265,7 @@ export function agentSetupPage(nav) {
       errorBanner.style.display = 'none';
     }
 
-    // ── Run ───────────────────────────────────────────────────────────────
+    // -- Run ---------------------------------------------------------------
     runBtn.addEventListener('click', () => {
       clearError();
       clearAgentState();
